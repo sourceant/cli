@@ -49,6 +49,7 @@ func TestTheFileMatchesWhatTheAgentReads(t *testing.T) {
 		Command: "/somewhere/sourceant",
 		Image:   "ghcr.io/sourceant/sourceant:v1",
 		DataDir: "/data",
+		Mount:   "/home/someone",
 		User:    "1000:1000",
 	}})
 	if err != nil {
@@ -70,6 +71,7 @@ func TestTheFileMatchesWhatTheAgentReads(t *testing.T) {
 		"command":  "/somewhere/sourceant",
 		"image":    "ghcr.io/sourceant/sourceant:v1",
 		"data_dir": "/data",
+		"mount":    "/home/someone",
 		"user":     "1000:1000",
 	} {
 		if core[field] != want {

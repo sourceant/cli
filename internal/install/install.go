@@ -36,6 +36,7 @@ type Core struct {
 	Command string  `json:"command,omitempty"`
 	Image   string  `json:"image,omitempty"`
 	DataDir string  `json:"data_dir,omitempty"`
+	Mount   string  `json:"mount,omitempty"`
 	User    string  `json:"user,omitempty"`
 }
 
@@ -142,10 +143,21 @@ func installDocker(opts Options, run Runner) (Config, error) {
 		return Config{}, fmt.Errorf("%s is not on this machine. Run without --no-pull to fetch it", image)
 	}
 
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return Config{}, fmt.Errorf("could not find your home directory: %w", err)
+	}
+
 	return Config{Core: Core{
 		Runtime: Docker,
 		Image:   image,
 		DataDir: DataDir(),
+		// The indexer reads a repository's files, so the container has to be
+		// able to see them. Your home is mounted at the path it already has,
+		// which is what lets one registry of absolute paths mean the same
+		// thing to either runtime. A repository outside it is not readable
+		// this way.
+		Mount: home,
 		// The image has a user of its own, and where its id differs from this
 		// person's, everything written into the mounted index would belong to
 		// somebody who does not exist here.
