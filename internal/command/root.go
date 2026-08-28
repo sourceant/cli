@@ -52,6 +52,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	root.PersistentFlags().BoolVar(&opts.asJSON, "json", false, "Print the agent's answer as JSON")
 
 	root.AddCommand(
+		installCommand(),
 		statusCommand(opts),
 		reposCommand(opts),
 		graphCommand(opts),

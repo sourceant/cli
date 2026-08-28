@@ -37,7 +37,14 @@ The CLI never reaches past the agent. The agent is the process that is always up
 
 ```bash
 make build
+./sourceant install
 ```
+
+`install` puts a core on this machine and writes down which one, so the agent knows what to start.
+
+Two ways to have it. `--runtime docker` pulls the published image, and is what works today. `--runtime python` builds a virtual environment and pip installs the core, for when the core is published as a package; until then it says so rather than recording something that will not start.
+
+Both put the index in the same place, `$XDG_DATA_HOME/sourceant`, so it does not matter which one indexed it. The container runs as whoever installed, so what it writes there belongs to them.
 
 Then start the agent. See [sourceant/agent](https://github.com/sourceant/agent).
 
@@ -51,6 +58,7 @@ Then start the agent. See [sourceant/agent](https://github.com/sourceant/agent).
 
 | Command | What it does |
 |---|---|
+| `sourceant install` | Put a core on this machine |
 | `sourceant status` | Whether the agent and the indexer are running |
 | `sourceant repos` | Repositories indexed on this machine |
 | `sourceant graph <repository>` | What the indexer found in one of them |
