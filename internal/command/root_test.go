@@ -160,6 +160,34 @@ func TestAnAgentThatIsNotRunningSaysHowToStartIt(t *testing.T) {
 	}
 }
 
+func TestUIPrintsTheAddressWithoutOpeningAnything(t *testing.T) {
+	run := running(t, map[string]answer{
+		"/health": {body: fixture(t, "health.json")},
+	})
+
+	stdout, stderr, code := run("ui", "--no-open")
+
+	if code != 0 {
+		t.Fatalf("exited %d: %s", code, stderr)
+	}
+	if !strings.Contains(stdout, "http://127.0.0.1:") {
+		t.Errorf("got %q, want the address to open", stdout)
+	}
+}
+
+func TestUISaysTheAgentIsDownRatherThanOpeningAnErrorPage(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+
+	code := Run([]string{"--agent", "http://127.0.0.1:1", "ui", "--no-open"}, &stdout, &stderr)
+
+	if code != 1 {
+		t.Fatalf("exited %d, want 1", code)
+	}
+	if !strings.Contains(stderr.String(), "Start it with sourceant-agent") {
+		t.Errorf("got %q, want what to do about it", stderr.String())
+	}
+}
+
 func TestVersionNeedsNoAgent(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 

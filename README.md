@@ -54,6 +54,7 @@ Then start the agent. See [sourceant/agent](https://github.com/sourceant/agent).
 | `sourceant status` | Whether the agent and the indexer are running |
 | `sourceant repos` | Repositories indexed on this machine |
 | `sourceant graph <repository>` | What the indexer found in one of them |
+| `sourceant ui` | Open the graph in a browser |
 | `sourceant version` | What this build is |
 
 `--json` prints the agent's own answer, for anything that wants to read it rather than look at it.

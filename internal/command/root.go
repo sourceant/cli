@@ -51,7 +51,13 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	root.PersistentFlags().DurationVar(&opts.timeout, "timeout", 30*time.Second, "How long to wait for the agent")
 	root.PersistentFlags().BoolVar(&opts.asJSON, "json", false, "Print the agent's answer as JSON")
 
-	root.AddCommand(statusCommand(opts), reposCommand(opts), graphCommand(opts), versionCommand())
+	root.AddCommand(
+		statusCommand(opts),
+		reposCommand(opts),
+		graphCommand(opts),
+		uiCommand(opts),
+		versionCommand(),
+	)
 
 	if err := root.Execute(); err != nil {
 		_, _ = fmt.Fprintln(stderr, "sourceant:", message(err))
