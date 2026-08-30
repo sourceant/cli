@@ -1,3 +1,5 @@
-sourceant
+# Anchored, or it also matches cmd/sourceant and the entry point is
+# never committed.
+/sourceant
 coverage.out
 coverage.html
