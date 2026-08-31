@@ -1,0 +1,34 @@
+name: Install script
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # The script is exercised on a machine with nothing on it, because that is
+  # the machine somebody runs it on.
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: It installs a release into a bare Ubuntu
+        run: sh scripts/test-install.sh
+
+  # Whether the script still works against what is actually published. It has
+  # nothing to install until the first release exists.
+  published:
+    runs-on: ubuntu-latest
+    container: ubuntu:24.04
+    continue-on-error: true
+    steps:
+      - name: Tools a bare machine has
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq curl ca-certificates
+
+      - name: Install the published CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/sourceant/cli/main/scripts/install.sh | sh
+          sourceant version

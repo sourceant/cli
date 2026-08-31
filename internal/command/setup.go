@@ -8,18 +8,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func installCommand() *cobra.Command {
+func setupCommand() *cobra.Command {
 	var (
 		runtime string
 		image   string
 		from    string
 		noPull  bool
+		noAgent bool
 	)
 	command := &cobra.Command{
-		Use:   "install",
-		Short: "Put a SourceAnt core on this machine",
-		Long: "Two ways to have the core. As a container, which is what exists today. " +
-			"Or as a Python program, for when the core is published as a package.",
+		Use:   "setup",
+		Short: "Set this machine up to run SourceAnt",
+		Long: "Installs the agent and a core, so the only thing anybody had to " +
+			"fetch by hand is this command. Two ways to have the core. As a " +
+			"container, which is what exists today. Or as a Python program, for " +
+			"when the core is published as a package.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			config, err := install.Install(install.Options{
@@ -45,7 +48,16 @@ func installCommand() *cobra.Command {
 			_, _ = fmt.Fprintf(out, "\nInstalled %s\n", config.Core.Describe())
 			_, _ = fmt.Fprintf(out, "Index at   %s\n", config.Core.DataDir)
 			_, _ = fmt.Fprintf(out, "Written to %s\n\n", path)
-			_, _ = fmt.Fprintln(out, "Start it with sourceant-agent, then sourceant ui.")
+
+			if !noAgent {
+				agentPath, err := install.InstallAgent(Version, install.Get, out)
+				if err != nil {
+					return fmt.Errorf("the core is installed, but the agent is not: %w", err)
+				}
+				_, _ = fmt.Fprintf(out, "Agent at   %s\n\n", agentPath)
+			}
+
+			_, _ = fmt.Fprintln(out, "Run sourceant ui to start it and open the view.")
 			return nil
 		},
 	}
@@ -53,5 +65,6 @@ func installCommand() *cobra.Command {
 	command.Flags().StringVar(&image, "image", install.DefaultImage, "The container to use, for the docker runtime")
 	command.Flags().StringVar(&from, "from", install.DefaultPackage, "What pip installs, for the python runtime")
 	command.Flags().BoolVar(&noPull, "no-pull", false, "Use an image already on this machine")
+	command.Flags().BoolVar(&noAgent, "no-agent", false, "Leave the agent alone, install only the core")
 	return command
 }

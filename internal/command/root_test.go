@@ -175,7 +175,10 @@ func TestUIPrintsTheAddressWithoutOpeningAnything(t *testing.T) {
 	}
 }
 
-func TestUISaysTheAgentIsDownRatherThanOpeningAnErrorPage(t *testing.T) {
+func TestUISaysWhatToInstallRatherThanOpeningAnErrorPage(t *testing.T) {
+	// A home with no agent in it, so the test cannot start one that happens to
+	// be installed on the machine running it.
+	t.Setenv("SOURCEANT_INSTALL_HOME", t.TempDir())
 	var stdout, stderr bytes.Buffer
 
 	code := Run([]string{"--agent", "http://127.0.0.1:1", "ui", "--no-open"}, &stdout, &stderr)
@@ -183,7 +186,7 @@ func TestUISaysTheAgentIsDownRatherThanOpeningAnErrorPage(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("exited %d, want 1", code)
 	}
-	if !strings.Contains(stderr.String(), "Start it with sourceant-agent") {
+	if !strings.Contains(stderr.String(), "sourceant setup") {
 		t.Errorf("got %q, want what to do about it", stderr.String())
 	}
 }
