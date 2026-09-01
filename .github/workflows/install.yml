@@ -4,6 +4,13 @@ on:
   push:
     branches: [main]
   pull_request:
+  release:
+    types: [published]
+  schedule:
+    # Whatever is published can rot without anybody touching this repository:
+    # a moved asset name, a deleted release, a GitHub change.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
 
 jobs:
   # The script is exercised on a machine with nothing on it, because that is
@@ -16,12 +23,13 @@ jobs:
       - name: It installs a release into a bare Ubuntu
         run: sh scripts/test-install.sh
 
-  # Whether the script still works against what is actually published. It has
-  # nothing to install until the first release exists.
+  # This one reads the script from main and installs whatever is released, so
+  # it says nothing about a change under review. It runs once something is
+  # published, and weekly after that.
   published:
+    if: github.event_name != 'pull_request' && github.event_name != 'push'
     runs-on: ubuntu-latest
     container: ubuntu:24.04
-    continue-on-error: true
     steps:
       - name: Tools a bare machine has
         run: |
