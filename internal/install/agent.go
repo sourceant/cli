@@ -17,6 +17,23 @@ import (
 // AgentRepo publishes the agent binary.
 const AgentRepo = "sourceant/agent"
 
+// downloadBase is where release assets are served from, and apiBase is what is
+// asked which version is latest. Both are overridable so an install can be
+// exercised without reaching GitHub.
+func downloadBase() string {
+	if base := os.Getenv("SOURCEANT_DOWNLOAD_BASE"); base != "" {
+		return base
+	}
+	return "https://github.com/" + AgentRepo + "/releases/download"
+}
+
+func apiBase() string {
+	if base := os.Getenv("SOURCEANT_API_BASE"); base != "" {
+		return base
+	}
+	return "https://api.github.com/repos/" + AgentRepo + "/releases"
+}
+
 // AgentName is the binary this installs.
 const AgentName = "sourceant-agent"
 
@@ -62,7 +79,7 @@ func Get(url string) (io.ReadCloser, error) {
 
 // LatestAgent asks which version to install when none was named.
 func LatestAgent(get Fetcher) (string, error) {
-	body, err := get("https://api.github.com/repos/" + AgentRepo + "/releases/latest")
+	body, err := get(apiBase() + "/latest")
 	if err != nil {
 		return "", err
 	}
@@ -83,7 +100,7 @@ func LatestAgent(get Fetcher) (string, error) {
 // AgentURL is where one version's asset lives.
 func AgentURL(version, platform string) string {
 	asset := fmt.Sprintf("%s-%s-%s.tar.gz", AgentName, version, platform)
-	return fmt.Sprintf("https://github.com/%s/releases/download/v%s/%s", AgentRepo, version, asset)
+	return fmt.Sprintf("%s/v%s/%s", downloadBase(), version, asset)
 }
 
 // InstallAgent puts the agent beside the CLI and returns where it went. The
