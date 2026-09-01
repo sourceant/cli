@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // Runtime is how the core is installed.
@@ -27,8 +28,34 @@ const (
 // DefaultImage is the published core.
 const DefaultImage = "ghcr.io/sourceant/sourceant:latest"
 
-// DefaultPackage is the core on PyPI.
-const DefaultPackage = "sourceant"
+// CoreRepo publishes the core.
+const CoreRepo = "sourceant/sourceant"
+
+// CoreWheel is the wheel one version publishes. Pip normalises the version, so
+// 1.0.0-beta.2 is 1.0.0b2 in the file name.
+func CoreWheel(version string) string {
+	return fmt.Sprintf("%s/v%s/sourceant-%s-py3-none-any.whl",
+		coreDownloadBase(), version, wheelVersion(version))
+}
+
+func coreDownloadBase() string {
+	if base := os.Getenv("SOURCEANT_CORE_DOWNLOAD_BASE"); base != "" {
+		return base
+	}
+	return "https://github.com/" + CoreRepo + "/releases/download"
+}
+
+// wheelVersion is the version as pip writes it into a file name.
+func wheelVersion(version string) string {
+	for _, pre := range []struct{ tag, short string }{
+		{"-beta.", "b"}, {"-alpha.", "a"}, {"-rc.", "rc"},
+	} {
+		if base, suffix, found := strings.Cut(version, pre.tag); found {
+			return base + pre.short + suffix
+		}
+	}
+	return version
+}
 
 // Core is what was installed.
 type Core struct {
@@ -100,6 +127,8 @@ type Options struct {
 	From string
 	// Pull says whether to fetch the image before writing anything down.
 	Pull bool
+	// Version is the release to install, when nothing else names one.
+	Version string
 	// Out receives progress.
 	Out io.Writer
 }
@@ -168,7 +197,7 @@ func installDocker(opts Options, run Runner) (Config, error) {
 func installPython(opts Options, run Runner) (Config, error) {
 	from := opts.From
 	if from == "" {
-		from = DefaultPackage
+		from = CoreWheel(opts.Version)
 	}
 	python, err := exec.LookPath("python3")
 	if err != nil {
@@ -190,8 +219,15 @@ func installPython(opts Options, run Runner) (Config, error) {
 	command := filepath.Join(venv, "bin", "sourceant")
 	if _, err := os.Stat(command); err != nil {
 		return Config{}, fmt.Errorf(
-			"%s installed without a sourceant command, so there is nothing to start. "+
-				"The core is not packaged for PyPI yet; use --runtime docker", from)
+			"%s installed without a sourceant command, so there is nothing to start", from)
+	}
+
+	// The container migrates on every start. Nothing does that for a program
+	// installed here, so an unmigrated database would serve a core that answers
+	// every read with a missing table.
+	say(opts.Out, "Preparing the database\n")
+	if output, err := run(command, "db", "upgrade", "head"); err != nil {
+		return Config{}, fmt.Errorf("could not prepare the database: %s", trim(output))
 	}
 
 	return Config{Core: Core{
@@ -228,4 +264,13 @@ func trim(output []byte) string {
 		return text
 	}
 	return "…" + text[len(text)-keep:]
+}
+
+// Chosen is the runtime to use when nobody named one. Docker carries the core
+// somebody else already built, so it wins wherever it answers.
+func Chosen(run Runner) Runtime {
+	if _, err := run("docker", "version", "--format", "{{.Server.Version}}"); err == nil {
+		return Docker
+	}
+	return Python
 }

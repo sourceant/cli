@@ -148,10 +148,10 @@ func TestAnImageThatIsNotHereAndWasNotPulledIsRefused(t *testing.T) {
 	}
 }
 
-/* The core has no packaging metadata and nothing is on PyPI, so this path
- * cannot work yet. What matters is that it says so rather than recording a
- * runtime the agent would fail to start. */
-func TestThePythonRuntimeSaysWhyItCannotWorkYet(t *testing.T) {
+/* A pip install can succeed and still leave nothing to run. What matters is
+ * that it says so rather than recording a runtime the agent would fail to
+ * start. */
+func TestThePythonRuntimeRefusesAnInstallThatLeftNoCommand(t *testing.T) {
 	t.Setenv("SOURCEANT_INSTALL_HOME", t.TempDir())
 	run := &recorder{}
 
@@ -160,16 +160,69 @@ func TestThePythonRuntimeSaysWhyItCannotWorkYet(t *testing.T) {
 	if err == nil {
 		t.Fatal("recorded a python runtime with no command behind it")
 	}
-	if !strings.Contains(err.Error(), "not packaged for PyPI yet") {
-		t.Errorf("got %q, want why it cannot work", err)
+	if !strings.Contains(err.Error(), "without a sourceant command") {
+		t.Errorf("got %q, want what was wrong with it", err)
 	}
-	if !strings.Contains(err.Error(), "--runtime docker") {
-		t.Errorf("got %q, want the way that does work", err)
+	if !strings.Contains(err.Error(), "sourceant") {
+		t.Errorf("got %q, want what it tried to install", err)
+	}
+}
+
+func TestThePythonRuntimeTakesTheWheelThisVersionPublished(t *testing.T) {
+	t.Setenv("SOURCEANT_INSTALL_HOME", t.TempDir())
+	run := &recorder{}
+
+	_, _ = Install(Options{Runtime: Python, Version: "1.0.0-beta.2"}, run.run)
+
+	var installed string
+	for _, call := range run.ran {
+		for _, arg := range call {
+			if strings.HasSuffix(arg, ".whl") {
+				installed = arg
+			}
+		}
+	}
+	// Pip normalises the version, so the tag and the file name differ.
+	want := "/v1.0.0-beta.2/sourceant-1.0.0b2-py3-none-any.whl"
+	if !strings.HasSuffix(installed, want) {
+		t.Errorf("installed %q, want it to end in %q", installed, want)
 	}
 }
 
 func TestARuntimeThatIsNeitherIsRefused(t *testing.T) {
 	if _, err := Install(Options{Runtime: "podman"}, (&recorder{}).run); err == nil {
 		t.Fatal("accepted a runtime that is neither")
+	}
+}
+
+func TestTheRuntimeIsChosenByWhatIsHere(t *testing.T) {
+	if got := Chosen((&recorder{}).run); got != Docker {
+		t.Errorf("chose %q where docker answers, want docker", got)
+	}
+
+	noDocker := &recorder{fail: map[string]error{"docker version": errors.New("not found")}}
+	if got := Chosen(noDocker.run); got != Python {
+		t.Errorf("chose %q where docker is absent, want python", got)
+	}
+}
+
+func TestThePythonRuntimePreparesTheDatabase(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("SOURCEANT_INSTALL_HOME", home)
+	// pip is stubbed here, so the command it would have written is put there by
+	// hand. Without it the install stops before any schema is prepared.
+	bin := filepath.Join(home, "runtime", "bin")
+	if err := os.MkdirAll(bin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bin, "sourceant"), nil, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	run := &recorder{}
+
+	_, _ = Install(Options{Runtime: Python, From: "sourceant"}, run.run)
+
+	if !strings.Contains(run.commands(), "db upgrade head") {
+		t.Errorf("a core was installed without a schema:\n%s", run.commands())
 	}
 }

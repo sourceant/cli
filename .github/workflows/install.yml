@@ -1,0 +1,42 @@
+name: Install script
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  release:
+    types: [published]
+  schedule:
+    # Whatever is published can rot without anybody touching this repository:
+    # a moved asset name, a deleted release, a GitHub change.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  # The script is exercised on a machine with nothing on it, because that is
+  # the machine somebody runs it on.
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: It installs a release into a bare Ubuntu
+        run: sh scripts/test-install.sh
+
+  # This one reads the script from main and installs whatever is released, so
+  # it says nothing about a change under review. It runs once something is
+  # published, and weekly after that.
+  published:
+    if: github.event_name != 'pull_request' && github.event_name != 'push'
+    runs-on: ubuntu-latest
+    container: ubuntu:24.04
+    steps:
+      - name: Tools a bare machine has
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq curl ca-certificates
+
+      - name: Install the published CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/sourceant/cli/main/scripts/install.sh | sh
+          sourceant version
