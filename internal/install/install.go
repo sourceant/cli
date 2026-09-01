@@ -222,6 +222,14 @@ func installPython(opts Options, run Runner) (Config, error) {
 			"%s installed without a sourceant command, so there is nothing to start", from)
 	}
 
+	// The container migrates on every start. Nothing does that for a program
+	// installed here, so an unmigrated database would serve a core that answers
+	// every read with a missing table.
+	say(opts.Out, "Preparing the database\n")
+	if output, err := run(command, "db", "upgrade", "head"); err != nil {
+		return Config{}, fmt.Errorf("could not prepare the database: %s", trim(output))
+	}
+
 	return Config{Core: Core{
 		Runtime: Python,
 		Command: command,

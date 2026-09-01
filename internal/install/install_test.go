@@ -205,3 +205,24 @@ func TestTheRuntimeIsChosenByWhatIsHere(t *testing.T) {
 		t.Errorf("chose %q where docker is absent, want python", got)
 	}
 }
+
+func TestThePythonRuntimePreparesTheDatabase(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("SOURCEANT_INSTALL_HOME", home)
+	// pip is stubbed here, so the command it would have written is put there by
+	// hand. Without it the install stops before any schema is prepared.
+	bin := filepath.Join(home, "runtime", "bin")
+	if err := os.MkdirAll(bin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bin, "sourceant"), nil, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	run := &recorder{}
+
+	_, _ = Install(Options{Runtime: Python, From: "sourceant"}, run.run)
+
+	if !strings.Contains(run.commands(), "db upgrade head") {
+		t.Errorf("a core was installed without a schema:\n%s", run.commands())
+	}
+}
