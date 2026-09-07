@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -72,27 +73,64 @@ func Get(url string) (io.ReadCloser, error) {
 	}
 	if response.StatusCode != http.StatusOK {
 		response.Body.Close()
-		return nil, fmt.Errorf("%s answered %s", url, response.Status)
+		return nil, &httpError{url: url, status: response.StatusCode}
 	}
 	return response.Body, nil
 }
 
-// LatestAgent asks which version to install when none was named.
+type httpError struct {
+	url    string
+	status int
+}
+
+func (e *httpError) Error() string {
+	return fmt.Sprintf("%s answered HTTP %d", e.url, e.status)
+}
+
 func LatestAgent(get Fetcher) (string, error) {
-	body, err := get(apiBase() + "/latest")
-	if err != nil {
-		return "", err
+	return latestRelease(apiBase(), get)
+}
+
+func LatestCore(get Fetcher) (string, error) {
+	base := os.Getenv("SOURCEANT_CORE_API_BASE")
+	if base == "" {
+		base = "https://api.github.com/repos/" + CoreRepo + "/releases"
 	}
-	defer body.Close()
-	var release struct {
+	return latestRelease(base, get)
+}
+
+func latestRelease(base string, get Fetcher) (string, error) {
+	type release struct {
 		Tag string `json:"tag_name"`
 	}
-	if err := json.NewDecoder(body).Decode(&release); err != nil {
-		return "", err
+	body, err := get(base + "/latest")
+	var selected release
+	if err != nil {
+		var status *httpError
+		if !errors.As(err, &status) || status.status != http.StatusNotFound {
+			return "", err
+		}
+		body, err = get(base + "?per_page=1")
+		if err != nil {
+			return "", err
+		}
+		defer func() { _ = body.Close() }()
+		var releases []release
+		if err := json.NewDecoder(body).Decode(&releases); err != nil {
+			return "", err
+		}
+		if len(releases) > 0 {
+			selected = releases[0]
+		}
+	} else {
+		defer func() { _ = body.Close() }()
+		if err := json.NewDecoder(body).Decode(&selected); err != nil {
+			return "", err
+		}
 	}
-	tag := strings.TrimPrefix(release.Tag, "v")
+	tag := strings.TrimPrefix(selected.Tag, "v")
 	if tag == "" {
-		return "", fmt.Errorf("%s names no latest release", AgentRepo)
+		return "", fmt.Errorf("%s names no published release", base)
 	}
 	return tag, nil
 }
@@ -117,6 +155,8 @@ func InstallAgent(version string, get Fetcher, out io.Writer) (string, error) {
 			return "", fmt.Errorf("could not tell which agent to install: %w", err)
 		}
 	}
+
+	version = strings.TrimPrefix(version, "v")
 
 	say(out, "Fetching %s %s for %s.\n", AgentName, version, platform)
 	body, err := get(AgentURL(version, platform))

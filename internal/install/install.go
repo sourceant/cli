@@ -158,6 +158,9 @@ func installDocker(opts Options, run Runner) (Config, error) {
 	image := opts.Image
 	if image == "" {
 		image = DefaultImage
+		if opts.Version != "" && opts.Version != "latest" {
+			image = "ghcr.io/sourceant/sourceant:v" + strings.TrimPrefix(opts.Version, "v")
+		}
 	}
 	if _, err := run("docker", "version", "--format", "{{.Server.Version}}"); err != nil {
 		return Config{}, errors.New("docker is not running here. Start it, or install the python runtime instead")
@@ -197,7 +200,15 @@ func installDocker(opts Options, run Runner) (Config, error) {
 func installPython(opts Options, run Runner) (Config, error) {
 	from := opts.From
 	if from == "" {
-		from = CoreWheel(opts.Version)
+		version := strings.TrimPrefix(opts.Version, "v")
+		if version == "" || version == "latest" {
+			var err error
+			version, err = LatestCore(Get)
+			if err != nil {
+				return Config{}, fmt.Errorf("could not tell which core to install: %w", err)
+			}
+		}
+		from = CoreWheel(version)
 	}
 	python, err := exec.LookPath("python3")
 	if err != nil {

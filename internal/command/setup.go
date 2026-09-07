@@ -10,11 +10,13 @@ import (
 
 func setupCommand() *cobra.Command {
 	var (
-		runtime string
-		image   string
-		from    string
-		noPull  bool
-		noAgent bool
+		coreVersion  string
+		agentVersion string
+		runtime      string
+		image        string
+		from         string
+		noPull       bool
+		noAgent      bool
 	)
 	command := &cobra.Command{
 		Use:   "setup",
@@ -35,7 +37,7 @@ func setupCommand() *cobra.Command {
 				Image:   image,
 				From:    from,
 				Pull:    !noPull,
-				Version: Version,
+				Version: coreVersion,
 				Out:     cmd.OutOrStdout(),
 			}, install.Run)
 			if err != nil {
@@ -56,7 +58,7 @@ func setupCommand() *cobra.Command {
 			_, _ = fmt.Fprintf(out, "Written to %s\n\n", path)
 
 			if !noAgent {
-				agentPath, err := install.InstallAgent(Version, install.Get, out)
+				agentPath, err := install.InstallAgent(agentVersion, install.Get, out)
 				if err != nil {
 					return fmt.Errorf("the core is installed, but the agent is not: %w", err)
 				}
@@ -67,10 +69,14 @@ func setupCommand() *cobra.Command {
 			return nil
 		},
 	}
+	command.Flags().StringVar(&coreVersion, "core-version", "latest", "Core release to install, independently of the CLI")
+	command.Flags().StringVar(&agentVersion, "agent-version", "latest", "Agent release to install, independently of the CLI")
 	command.Flags().StringVar(&runtime, "runtime", string(install.Docker), "docker or python. Chosen for you when not named")
-	command.Flags().StringVar(&image, "image", install.DefaultImage, "The container to use, for the docker runtime")
-	command.Flags().StringVar(&from, "from", "", "What pip installs, for the python runtime. Defaults to the wheel this version published")
+	command.Flags().StringVar(&image, "image", "", "The container to use, for the docker runtime")
+	command.Flags().StringVar(&from, "from", "", "What pip installs, for the python runtime. Defaults to the selected core release wheel")
 	command.Flags().BoolVar(&noPull, "no-pull", false, "Use an image already on this machine")
 	command.Flags().BoolVar(&noAgent, "no-agent", false, "Leave the agent alone, install only the core")
+	command.MarkFlagsMutuallyExclusive("core-version", "image")
+	command.MarkFlagsMutuallyExclusive("core-version", "from")
 	return command
 }
