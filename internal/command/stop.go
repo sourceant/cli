@@ -1,10 +1,9 @@
 package command
 
 import (
-	"errors"
 	"fmt"
-	"syscall"
 
+	"github.com/sourceant/cli/internal/agent"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +14,7 @@ func stopCommand(opts *options) *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := opts.client().Stop(cmd.Context()); err != nil {
-				if errors.Is(err, syscall.ECONNREFUSED) {
+				if agent.IsConnectionRefused(err) {
 					_, _ = fmt.Fprintln(cmd.OutOrStdout(), "SourceAnt is already stopped.")
 					return nil
 				}
