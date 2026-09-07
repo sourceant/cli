@@ -93,3 +93,7 @@ make build
 ## Licence
 
 MIT.
+
+## Versioning
+
+The CLI is versioned independently of the core, agent, and design package. A CLI release does not require matching releases of the components it installs. Use `--core-version` and `--agent-version` to select them separately, or `--image` and `--from` to choose the core directly.
