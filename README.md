@@ -62,7 +62,7 @@ curl -fsSL https://raw.githubusercontent.com/sourceant/cli/main/scripts/install.
 
 Both put the index in the same place, `$XDG_DATA_HOME/sourceant`, so it does not matter which one indexed it. The container runs as whoever installed, so what it writes there belongs to them.
 
-`sourceant ui` starts the agent and opens the view.
+`sourceant ui` starts the agent and opens the view. `sourceant stop` shuts down the agent and its core without removing the index or configuration. Stopping requires an agent with stop support.
 
 | Variable | Default | Meaning |
 |---|---|---|
@@ -75,6 +75,7 @@ Both put the index in the same place, `$XDG_DATA_HOME/sourceant`, so it does not
 | Command | What it does |
 |---|---|
 | `sourceant setup` | Put the agent and a core on this machine |
+| `sourceant stop` | Stop the agent and its Python core or Docker container |
 | `sourceant status` | Whether the agent and the indexer are running |
 | `sourceant repos` | Repositories indexed on this machine |
 | `sourceant graph <repository>` | What the indexer found in one of them |

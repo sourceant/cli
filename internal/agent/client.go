@@ -8,12 +8,14 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -79,6 +81,11 @@ func (e *Unreachable) Error() string {
 }
 
 func (e *Unreachable) Unwrap() error { return e.Cause }
+
+func IsConnectionRefused(err error) bool {
+	var unreachable *Unreachable
+	return errors.As(err, &unreachable) && errors.Is(unreachable.Cause, syscall.ECONNREFUSED)
+}
 
 // Client talks to one agent.
 type Client struct {
@@ -168,4 +175,31 @@ func detail(body []byte) string {
 		return parsed.Error
 	}
 	return strings.TrimSpace(string(body))
+}
+
+func (c *Client) Stop(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/stop", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("X-Sourceant-Client", "cli")
+	req.Header.Set("Accept", "application/json")
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return &Unreachable{BaseURL: c.baseURL, Cause: err}
+	}
+	defer func() { _ = resp.Body.Close() }()
+	switch resp.StatusCode {
+	case http.StatusNoContent:
+		return nil
+	case http.StatusOK, http.StatusNotFound, http.StatusMethodNotAllowed:
+		// Only 204 acknowledges shutdown; a generic 200 does not confirm it.
+		return &Error{StatusCode: resp.StatusCode, Detail: "this agent does not support stop; update it with sourceant setup"}
+	default:
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return &Error{StatusCode: resp.StatusCode, Detail: detail(body)}
+	}
 }
