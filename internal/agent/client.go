@@ -169,3 +169,27 @@ func detail(body []byte) string {
 	}
 	return strings.TrimSpace(string(body))
 }
+
+func (c *Client) Stop(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/stop", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("X-Sourceant-Client", "cli")
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return &Unreachable{BaseURL: c.baseURL, Cause: err}
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusMethodNotAllowed {
+		return &Error{StatusCode: resp.StatusCode, Detail: "this agent does not support stop; update it with sourceant setup"}
+	}
+	if resp.StatusCode != http.StatusNoContent {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		return &Error{StatusCode: resp.StatusCode, Detail: detail(body)}
+	}
+	return nil
+}
