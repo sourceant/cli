@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-beta.3]
+
+### Added
+
+- `sourceant stop` shuts down the local stack without removing its data.
+- Core and agent releases can be selected independently during setup.
+
+### Fixed
+
+- Installation finds a release when only prereleases are available.
+
+### Compatibility
+
+- `sourceant stop` requires agent `1.0.0-beta.3` or later with shutdown support.
+- Core compatibility is determined by the installed agent.
+
 ## [1.0.0-beta.2] - 2026-08-30
 
 First release, versioned alongside the core it reads.

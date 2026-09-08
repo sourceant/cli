@@ -39,10 +39,20 @@ resolve() {
         printf '%s' "${VERSION#v}"
         return
     fi
-    # The tag, read without jq so this works on a machine with nothing on it.
-    tag=$(curl -fsSL "$API_BASE/latest" |
+    status=$(curl -sSL -w '\n%{http_code}' "$API_BASE/latest") ||
+        die "could not reach $API_BASE/latest"
+    code=$(printf '%s\n' "$status" | tail -1)
+    case "$code" in
+        200) ;;
+        404)
+            status=$(curl -fsSL "$API_BASE?per_page=1") ||
+                die "could not fetch releases from $API_BASE"
+            ;;
+        *) die "release lookup returned HTTP $code from $API_BASE/latest" ;;
+    esac
+    tag=$(printf '%s\n' "$status" |
         sed -n 's/.*"tag_name" *: *"\([^"]*\)".*/\1/p' | head -1)
-    [ -n "$tag" ] || die "could not tell which version is latest"
+    [ -n "$tag" ] || die "no published release found; set SOURCEANT_VERSION to a release version"
     printf '%s' "${tag#v}"
 }
 
