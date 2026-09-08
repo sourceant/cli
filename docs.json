@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/whilesmart/docs-kit/main/schema/docs.schema.json",
+  "name": "SourceAnt CLI",
+  "description": "Install and control the local SourceAnt stack.",
+  "category": {
+    "language": "go"
+  },
+  "sidebar": [
+    {
+      "title": "Versions",
+      "path": "docs/versioning.md"
+    }
+  ]
+}

@@ -94,13 +94,3 @@ make build
 ## Licence
 
 MIT.
-
-## Versioning
-
-The CLI is versioned independently of the core, agent, and design package. A CLI release does not require matching releases of the components it installs. Use `--core-version` and `--agent-version` to select them separately, or `--image` and `--from` to choose the core directly.
-
-CLI `1.0.0-beta.3` requires agent `1.0.0-beta.3` for `sourceant stop`. The agent defines core compatibility. For a reproducible setup, select both explicitly:
-
-```bash
-sourceant setup --agent-version 1.0.0-beta.3 --core-version 1.0.0-beta.2
-```
