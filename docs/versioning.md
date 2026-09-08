@@ -2,12 +2,12 @@
 
 The CLI, agent, and core are versioned independently.
 
-Select the agent and core releases during setup:
+Select the agent and core releases during setup. Replace `AGENT_VERSION` and `CORE_VERSION` with the releases you want:
 
 ```bash
-sourceant setup --agent-version 1.0.0-beta.3 --core-version 1.0.0-beta.2
+sourceant setup --agent-version AGENT_VERSION --core-version CORE_VERSION
 ```
 
 Use `--image` for a specific core container or `--from` for a Python installation source.
 
-CLI `1.0.0-beta.3` needs agent `1.0.0-beta.3` for `sourceant stop`. The agent defines core compatibility.
+`sourceant stop` needs agent shutdown support, introduced in agent `1.0.0-beta.3`. The agent defines core compatibility.

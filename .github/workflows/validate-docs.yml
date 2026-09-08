@@ -14,4 +14,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: whilesmart/docs-kit/.github/actions/validate-docs@main
+      - uses: whilesmart/docs-kit/.github/actions/validate-docs@b9029c4db050c27d086f0735038c5677845f313c
