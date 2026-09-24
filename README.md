@@ -79,6 +79,7 @@ Both put the index in the same place, `$XDG_DATA_HOME/sourceant`, so it does not
 | `sourceant status` | Whether the agent and the indexer are running |
 | `sourceant repos` | Repositories indexed on this machine |
 | `sourceant graph <repository>` | What the indexer found in one of them |
+| `sourceant architecture <repository>` | Indexed components and dependencies; compare an exported baseline with `--baseline` |
 | `sourceant ui` | Open the graph in a browser |
 | `sourceant version` | What this build is |
 
