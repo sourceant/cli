@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/sourceant/cli/internal/agent"
 )
 
 // The fixtures are answers captured from a running agent, not written here, so
@@ -79,6 +81,51 @@ func TestReposListsWhatIsIndexedHere(t *testing.T) {
 	}
 	if !strings.Contains(stdout, "local/sourceant") {
 		t.Errorf("the repository is missing from:\n%s", stdout)
+	}
+}
+
+func TestReposSaysWhenEachWasLastRead(t *testing.T) {
+	run := running(t, map[string]answer{
+		"/api/repositories": {body: fixture(t, "repositories.json")},
+	})
+
+	stdout, stderr, code := run("repos")
+
+	if code != 0 {
+		t.Fatalf("exited %d: %s", code, stderr)
+	}
+	if !strings.Contains(stdout, "READ") || !strings.Contains(stdout, "ago") {
+		t.Errorf("when it was read is missing from:\n%s", stdout)
+	}
+}
+
+func TestReposSaysWhichFoldersAreBeingReadNow(t *testing.T) {
+	run := running(t, map[string]answer{
+		"/api/repositories": {body: fixture(t, "repositories-reading.json")},
+	})
+
+	stdout, stderr, code := run("repos")
+
+	if code != 0 {
+		t.Fatalf("exited %d: %s", code, stderr)
+	}
+	if !strings.Contains(stdout, "reading") {
+		t.Errorf("a folder being read is not said to be:\n%s", stdout)
+	}
+}
+
+func TestAFolderNobodyHasReadSaysNever(t *testing.T) {
+	for _, one := range []struct {
+		repository agent.Repository
+		want       string
+	}{
+		{agent.Repository{}, "never"},
+		{agent.Repository{Reading: true}, "reading"},
+		{agent.Repository{IndexedAt: "whenever"}, "whenever"},
+	} {
+		if got := read(one.repository); got != one.want {
+			t.Errorf("read(%+v) = %q, want %q", one.repository, got, one.want)
+		}
 	}
 }
 

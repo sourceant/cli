@@ -29,9 +29,14 @@ type Status struct {
 }
 
 // Repository is one repository indexed on this machine.
+//
+// IndexedAt is empty until it has been read, which is not the same as nothing
+// having changed since, and Reading says a read is under way now.
 type Repository struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
+	Name      string `json:"name"`
+	Path      string `json:"path"`
+	IndexedAt string `json:"indexed_at"`
+	Reading   bool   `json:"reading"`
 }
 
 // Node is one file, import or symbol.

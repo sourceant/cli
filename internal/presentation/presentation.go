@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"text/tabwriter"
+	"time"
 )
 
 // Table writes aligned columns, header first.
@@ -35,4 +36,20 @@ func Count(n int, singular, plural string) string {
 		return fmt.Sprintf("%d %s", n, singular)
 	}
 	return fmt.Sprintf("%d %s", n, plural)
+}
+
+// Since renders how long ago a moment was, in the coarsest unit that still says
+// something: a person reading a table wants "3 days", not 4,317 minutes.
+func Since(at time.Time) string {
+	elapsed := time.Since(at)
+	switch {
+	case elapsed < time.Minute:
+		return "just now"
+	case elapsed < time.Hour:
+		return Count(int(elapsed.Minutes()), "minute", "minutes") + " ago"
+	case elapsed < 24*time.Hour:
+		return Count(int(elapsed.Hours()), "hour", "hours") + " ago"
+	default:
+		return Count(int(elapsed.Hours()/24), "day", "days") + " ago"
+	}
 }
