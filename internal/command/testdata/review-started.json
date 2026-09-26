@@ -1,0 +1,38 @@
+{
+  "id": "4d4ca793285c467dbc406713a2601b00",
+  "repository": "fixture/calc",
+  "status": "running",
+  "title": "Add subtract and times",
+  "error": "",
+  "started": "2026-09-26T16:43:27.552516+00:00",
+  "finished": "",
+  "review": {
+    "ready": false,
+    "note": "",
+    "base": "",
+    "where": {
+      "path": "",
+      "branch": "",
+      "against": "",
+      "base": "",
+      "commits": 0
+    },
+    "changed": null,
+    "commits": null,
+    "skills": null,
+    "knowledge": null,
+    "verdicts": null,
+    "review": {
+      "verdict": "",
+      "summary": {
+        "overview": "",
+        "key_improvements": null,
+        "minor_suggestions": null,
+        "critical_issues": null
+      },
+      "suggestions": null,
+      "notes": null
+    }
+  },
+  "path": "/reviews/4d4ca793285c467dbc406713a2601b00"
+}

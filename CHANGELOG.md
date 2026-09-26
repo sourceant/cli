@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `sourceant review` reads the work in a checkout against the branch it
+  would be proposed to, and prints a link to the answer. It exits 2 when a
+  skill blocks the change.
+
 ## [1.0.0-beta.3]
 
 ### Added
