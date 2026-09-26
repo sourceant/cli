@@ -155,7 +155,7 @@ func TestAnAgentThatIsNotRunningSaysHowToStartIt(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("exited %d, want 1", code)
 	}
-	if !strings.Contains(stderr.String(), "Start it with sourceant-agent") {
+	if !strings.Contains(stderr.String(), "Start it with sourceant ui") {
 		t.Errorf("got %q, want what to do about it", stderr.String())
 	}
 }
