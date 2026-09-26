@@ -54,9 +54,11 @@ func reviewCommand(opts *options) *cobra.Command {
 			started, err := client.Review(cmd.Context(), agent.Ask{
 				Repository: repository,
 				Against:    against,
-				Title:      title,
-				Skills:     skills,
-				UseModel:   !noModel,
+				// Named, so a list of reviews says where each came from. A row
+				// with no title is a review nobody can account for.
+				Title:    or(title, "From the terminal"),
+				Skills:   skills,
+				UseModel: !noModel,
 			})
 			if err != nil {
 				return err

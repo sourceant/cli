@@ -187,6 +187,30 @@ func TestWhatToCompareAgainstReachesTheAgent(t *testing.T) {
 	}
 }
 
+func TestAReviewNobodyNamedSaysItCameFromTheTerminal(t *testing.T) {
+	folder := t.TempDir()
+	run, _, sent := reviewing(t, map[string][]answer{
+		"/api/repositories": {{body: indexing(t, folder)}},
+		"/api/reviews":      {{status: http.StatusAccepted, body: fixture(t, "review-started.json")}},
+		"/api/reviews/":     {{body: fixture(t, "review-done.json")}},
+	})
+
+	_, stderr, code := run("review", folder, "--no-wait")
+
+	if code != 0 {
+		t.Fatalf("exited %d: %s", code, stderr)
+	}
+	var ask struct {
+		Title string `json:"title"`
+	}
+	if err := json.Unmarshal(*sent, &ask); err != nil {
+		t.Fatalf("could not read what was asked: %v", err)
+	}
+	if ask.Title != "From the terminal" {
+		t.Errorf("asked with title %q, want where it came from", ask.Title)
+	}
+}
+
 func TestAFolderNobodyIndexedNamesTheCommandThatAddsIt(t *testing.T) {
 	run, _, _ := reviewing(t, map[string][]answer{
 		"/api/repositories": {{body: []byte("[]")}},
