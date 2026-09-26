@@ -78,7 +78,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 func message(err error) string {
 	var unreachable *agent.Unreachable
 	if errors.As(err, &unreachable) {
-		return fmt.Sprintf("no agent answering at %s. Start it with sourceant-agent", unreachable.BaseURL)
+		return fmt.Sprintf("no agent answering at %s. Start it with sourceant ui", unreachable.BaseURL)
 	}
 	return err.Error()
 }
