@@ -1,8 +1,18 @@
 # SourceAnt CLI
 
-The command a person types. It reads the code graph the SourceAnt agent keeps on this machine.
+The command a person types. It reads the work in a checkout, and the code graph the SourceAnt agent keeps on this machine.
 
 ```
+$ sourceant review
+http://127.0.0.1:8930/reviews/8c2b18b67f4c41efb61efd7d2967ccfd
+
+feat/subtract against main (bd51156), 1 file changed, 2 commits
+
+blocking  calc.py:5  The function 'subtract' has no docstring on its first line.
+blocking  calc.py:9  The function 'times' has no docstring on its first line.
+
+Not ready. 2 blocking.
+
 $ sourceant repos
 REPOSITORY       PATH
 acme/billing     /home/you/work/billing
@@ -74,6 +84,7 @@ Both put the index in the same place, `$XDG_DATA_HOME/sourceant`, so it does not
 
 | Command | What it does |
 |---|---|
+| `sourceant review [path]` | Read what a checkout has that its default branch does not |
 | `sourceant setup` | Put the agent and a core on this machine |
 | `sourceant stop` | Stop the agent and its Python core or Docker container |
 | `sourceant status` | Whether the agent and the indexer are running |
@@ -81,6 +92,8 @@ Both put the index in the same place, `$XDG_DATA_HOME/sourceant`, so it does not
 | `sourceant graph <repository>` | What the indexer found in one of them |
 | `sourceant ui` | Open the graph in a browser |
 | `sourceant version` | What this build is |
+
+`review` reads the folder you are standing in, committed or not, against the branch the repository defaults to. It exits 2 when a skill blocks the change, so a shell script can use it. `--against <ref>` compares against something else, `--no-model` says what changed without judging it, `--no-wait` prints the link and leaves it running, and `--title` and `--skill` name the change and the skills to read it against.
 
 `--json` prints the agent's own answer, for anything that wants to read it rather than look at it.
 
