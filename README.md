@@ -14,8 +14,9 @@ blocking  calc.py:9  The function 'times' has no docstring on its first line.
 Not ready. 2 blocking.
 
 $ sourceant repos
-REPOSITORY       PATH
-acme/billing     /home/you/work/billing
+REPOSITORY       READ            PATH
+acme/billing     3 minutes ago   /home/you/work/billing
+acme/shipping    reading         /home/you/work/shipping
 
 $ sourceant graph acme/billing
 2215 nodes, 2006 links

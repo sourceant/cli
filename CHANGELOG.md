@@ -7,11 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-beta.4] - 2026-09-27
+
 ### Added
 
-- `sourceant review` reads the work in a checkout against the branch it
-  would be proposed to, and prints a link to the answer. It exits 2 when a
-  skill blocks the change.
+- `sourceant review` reads the work in a checkout against the branch it would be
+  proposed to, and prints a link to the answer. It exits 2 when a skill blocks
+  the change, so a shell script can use it
+- `sourceant repos` says when each repository was last read, or that it is being
+  read now
+
+### Fixed
+
+- The line printed when no agent answers names a command that is on the path
+- A review asked for from the terminal is named, so a list of reviews says where
+  each came from
 
 ## [1.0.0-beta.3]
 
