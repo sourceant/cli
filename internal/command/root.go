@@ -52,6 +52,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	root.PersistentFlags().BoolVar(&opts.asJSON, "json", false, "Print the agent's answer as JSON")
 
 	root.AddCommand(
+		reviewCommand(opts),
 		stopCommand(opts),
 		setupCommand(),
 		statusCommand(opts),
@@ -65,6 +66,10 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	)
 
 	if err := root.Execute(); err != nil {
+		var refused *unready
+		if errors.As(err, &refused) {
+			return refused.code()
+		}
 		_, _ = fmt.Fprintln(stderr, "sourceant:", message(err))
 		return 1
 	}
@@ -76,7 +81,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 func message(err error) string {
 	var unreachable *agent.Unreachable
 	if errors.As(err, &unreachable) {
-		return fmt.Sprintf("no agent answering at %s. Start it with sourceant-agent", unreachable.BaseURL)
+		return fmt.Sprintf("no agent answering at %s. Start it with sourceant ui", unreachable.BaseURL)
 	}
 	return err.Error()
 }
@@ -148,12 +153,28 @@ func reposCommand(opts *options) *cobra.Command {
 			}
 			rows := make([][]string, 0, len(repositories))
 			for _, repository := range repositories {
-				rows = append(rows, []string{repository.Name, repository.Path})
+				rows = append(rows, []string{repository.Name, read(repository), repository.Path})
 			}
-			presentation.Table(cmd.OutOrStdout(), []string{"REPOSITORY", "PATH"}, rows)
+			presentation.Table(cmd.OutOrStdout(), []string{"REPOSITORY", "READ", "PATH"}, rows)
 			return nil
 		},
 	}
+}
+
+// read says where a repository stands: a folder nobody has read answers about
+// nothing, and one being read now answers about part of itself.
+func read(repository agent.Repository) string {
+	if repository.Reading {
+		return "reading"
+	}
+	if repository.IndexedAt == "" {
+		return "never"
+	}
+	at, err := time.Parse(time.RFC3339, repository.IndexedAt)
+	if err != nil {
+		return repository.IndexedAt
+	}
+	return presentation.Since(at)
 }
 
 func graphCommand(opts *options) *cobra.Command {
