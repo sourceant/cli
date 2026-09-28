@@ -1,6 +1,6 @@
 # SourceAnt CLI
 
-The command a person types. It reads the work in a checkout, and the code graph the SourceAnt agent keeps on this machine.
+Review changes in your checkout before you push, inspect code structure, and open the SourceAnt agent’s local browser.
 
 ```
 $ sourceant review
@@ -81,6 +81,22 @@ Any command that needs the agent starts one, so nothing has to be started by han
 
 `--agent`, `--timeout` and `--json` override it per command.
 
+## Review local changes
+
+```bash
+sourceant ui
+sourceant repo add /path/to/checkout --name acme/app
+sourceant review /path/to/checkout
+```
+
+The review command prints a browser link, waits for the result, and exits with status 2 if the change is not ready. Use `--no-model` to inspect the change without model review, or `--no-wait` to return the link immediately.
+
+In the browser, open **Reviews**, select the repository, and choose **Read what changed** to inspect the diff and applicable context without calling a model. To request findings, configure a model and provider key in **Settings → Model**, then choose **Review it**. Results stay in the local review history.
+
+Connect your coding assistant to the local agent's `/mcp` endpoint, or configure `sourceant mcp` as its standard-input/output command. The `review_working_tree` tool starts a review and returns a browser link while it runs.
+
+Model review sends code and context to your configured provider. Run your project's tests and build separately; a review is not proof that they pass. See the [local review guide](https://sourceant.ai/docs/local-reviews) for the complete workflow.
+
 ## Commands
 
 | Command | What it does |
@@ -89,10 +105,12 @@ Any command that needs the agent starts one, so nothing has to be started by han
 | `sourceant setup` | Put the agent and a core on this machine |
 | `sourceant stop` | Stop the agent and its Python core or Docker container |
 | `sourceant status` | Whether the agent and the indexer are running |
+| `sourceant repo add <path>` | Register a local checkout; use `--name` to choose its name |
+| `sourceant mcp` | Connect an MCP client to the running local agent |
 | `sourceant repos` | Repositories indexed on this machine |
 | `sourceant graph <repository>` | What the indexer found in one of them |
 | `sourceant architecture <repository>` | Indexed components and dependencies; compare an exported baseline with `--baseline` |
-| `sourceant ui` | Open the graph in a browser |
+| `sourceant ui` | Open local reviews, skills, knowledge and graphs in a browser |
 | `sourceant start` | Start the agent and the indexer |
 | `sourceant update [cli\|agent\|core]...` | Bring this machine up to the current release |
 | `sourceant version` | What this build is |
