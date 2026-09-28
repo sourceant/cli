@@ -1,0 +1,7 @@
+{
+  "repository": "acme/billing",
+  "before": "e3df98abd8989fdf8054f071ed13e5e151e596ddd25cdf4138bc59b5824d6a98",
+  "after": "e3df98abd8989fdf8054f071ed13e5e151e596ddd25cdf4138bc59b5824d6a98",
+  "components": [],
+  "relationships": []
+}

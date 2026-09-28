@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "repository": "acme/billing",
+  "grouping": {
+    "kind": "directory",
+    "depth": 1,
+    "include_tests": false
+  },
+  "components": [
+    {
+      "id": "part:9aec5ea70b9fc283cd2bc80f",
+      "name": "identity",
+      "path": "identity",
+      "files": 1,
+      "nodes": 2,
+      "sample_files": [
+        "identity/user.py"
+      ],
+      "incoming": 1,
+      "outgoing": 0,
+      "fingerprint": "cc4018e22750c491eb0a6804b9b6ed5119b7ce90165a6d2656911f2057c48d11"
+    },
+    {
+      "id": "part:0b121dabb6f66a3d527c7f07",
+      "name": "payments",
+      "path": "payments",
+      "files": 1,
+      "nodes": 2,
+      "sample_files": [
+        "payments/charge.py"
+      ],
+      "incoming": 0,
+      "outgoing": 1,
+      "fingerprint": "e54ea556564b8e0f9b62d70c70dcd1e56a2d74dc57e15a8127be1dec1040b5b4"
+    }
+  ],
+  "relationships": [
+    {
+      "source": "part:0b121dabb6f66a3d527c7f07",
+      "target": "part:9aec5ea70b9fc283cd2bc80f",
+      "type": "imports",
+      "count": 1,
+      "evidence": [
+        {
+          "origin": "inferred",
+          "source": {
+            "path": "payments/charge.py",
+            "symbol": "file:payments/charge.py"
+          },
+          "target": {
+            "path": "identity/user.py",
+            "symbol": "file:identity/user.py"
+          }
+        }
+      ]
+    }
+  ],
+  "coverage": {
+    "nodes": 4,
+    "files": 2,
+    "unplaced_nodes": 0,
+    "unresolved_edges": 0,
+    "truncated": false
+  },
+  "fingerprint": "e3df98abd8989fdf8054f071ed13e5e151e596ddd25cdf4138bc59b5824d6a98"
+}

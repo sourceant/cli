@@ -56,7 +56,10 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		setupCommand(),
 		statusCommand(opts),
 		reposCommand(opts),
+		repoCommand(opts),
+		mcpCommand(opts),
 		graphCommand(opts),
+		architectureCommand(opts),
 		uiCommand(opts),
 		versionCommand(),
 	)
