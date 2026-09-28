@@ -13,7 +13,7 @@ func stopCommand(opts *options) *cobra.Command {
 		Short: "Stop the agent and its core",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := opts.client().Stop(cmd.Context()); err != nil {
+			if err := opts.plainClient().Stop(cmd.Context()); err != nil {
 				if agent.IsConnectionRefused(err) {
 					_, _ = fmt.Fprintln(cmd.OutOrStdout(), "SourceAnt is already stopped.")
 					return nil

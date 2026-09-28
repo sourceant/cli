@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -96,14 +97,67 @@ func IsConnectionRefused(err error) bool {
 type Client struct {
 	baseURL string
 	http    *http.Client
+	revive  *reviving
 }
 
 // New builds a client for the agent at baseURL.
 func New(baseURL string, timeout time.Duration) *Client {
-	return &Client{
+	client := &Client{
 		baseURL: strings.TrimRight(baseURL, "/"),
 		http:    &http.Client{Timeout: timeout},
 	}
+	client.revive = &reviving{client: client}
+	client.http.Transport = client.revive
+	return client
+}
+
+// Starter brings the agent up and answers with the address it listens on.
+type Starter func(ctx context.Context) (string, error)
+
+// StartWith gives this client something to run when nothing answers. Without
+// it, a call to an agent that is not running fails as it always did.
+func StartWith(client *Client, start Starter) { client.revive.start = start }
+
+// reviving starts the agent once, for the first call that finds it absent, and
+// sends that call again. The agent may come up somewhere else, so the retry
+// follows the address it answers on.
+type reviving struct {
+	client *Client
+	start  Starter
+	once   sync.Once
+	url    string
+	err    error
+}
+
+func (r *reviving) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := http.DefaultTransport.RoundTrip(req)
+	if err == nil || r.start == nil || !errors.Is(err, syscall.ECONNREFUSED) {
+		return resp, err
+	}
+	r.once.Do(func() { r.url, r.err = r.start(req.Context()) })
+	if r.err != nil {
+		return nil, err
+	}
+	retry := req.Clone(req.Context())
+	if r.url != "" {
+		moved, parsed := url.Parse(r.url)
+		if parsed != nil {
+			return nil, err
+		}
+		retry.URL.Scheme, retry.URL.Host, retry.Host = moved.Scheme, moved.Host, ""
+		r.client.baseURL = strings.TrimRight(r.url, "/")
+	}
+	if req.Body != nil {
+		if req.GetBody == nil {
+			return nil, err
+		}
+		body, again := req.GetBody()
+		if again != nil {
+			return nil, err
+		}
+		retry.Body = body
+	}
+	return http.DefaultTransport.RoundTrip(retry)
 }
 
 // BaseURL is the agent this client talks to.

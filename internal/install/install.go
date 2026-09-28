@@ -28,6 +28,9 @@ const (
 // DefaultImage is the published core.
 const DefaultImage = "ghcr.io/sourceant/sourceant:latest"
 
+// CLIRepo publishes this command.
+const CLIRepo = "sourceant/cli"
+
 // CoreRepo publishes the core.
 const CoreRepo = "sourceant/sourceant"
 
@@ -70,6 +73,13 @@ type Core struct {
 // Config is the whole file.
 type Config struct {
 	Core Core `json:"core"`
+	// Agent is where the agent answers, written when it is not the default.
+	Agent Agent `json:"agent,omitempty"`
+}
+
+// Agent is where this machine's agent listens.
+type Agent struct {
+	URL string `json:"url,omitempty"`
 }
 
 // Home is where SourceAnt keeps what it installed.
@@ -106,6 +116,45 @@ func DataDir() string {
 }
 
 // Save writes the runtime for the agent to read.
+// Load reads what was written here, or an empty config where nothing was.
+func Load(path string) (Config, error) {
+	var config Config
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return config, nil
+		}
+		return config, err
+	}
+	if err := json.Unmarshal(data, &config); err != nil {
+		return config, fmt.Errorf("%s is not readable as configuration: %w", path, err)
+	}
+	return config, nil
+}
+
+// SavedAgentURL is the address written here, or empty.
+func SavedAgentURL() string {
+	config, err := Load(ConfigPath())
+	if err != nil {
+		return ""
+	}
+	return config.Agent.URL
+}
+
+// SaveAgentURL records where the agent answers, leaving the rest alone.
+func SaveAgentURL(url string) error {
+	path := ConfigPath()
+	config, err := Load(path)
+	if err != nil {
+		return err
+	}
+	if config.Agent.URL == url {
+		return nil
+	}
+	config.Agent.URL = url
+	return Save(path, config)
+}
+
 func Save(path string, config Config) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
@@ -284,4 +333,13 @@ func Chosen(run Runner) Runtime {
 		return Docker
 	}
 	return Python
+}
+
+// Self is where this command is on disk, for replacing it with a newer one.
+func Self() (string, error) {
+	path, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	return path, nil
 }

@@ -2,6 +2,7 @@
 package command
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/sourceant/cli/internal/agent"
+	"github.com/sourceant/cli/internal/install"
 	"github.com/sourceant/cli/internal/presentation"
 	"github.com/spf13/cobra"
 )
@@ -32,6 +34,10 @@ type options struct {
 	agentURL string
 	timeout  time.Duration
 	asJSON   bool
+	// Whether somebody named the agent, in which case it is not this
+	// command's business to start one somewhere else.
+	agentNamed bool
+	out        io.Writer
 }
 
 // Run executes the command tree and returns the process exit code.
@@ -43,18 +49,23 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
+	opts.out = stdout
 	root.SetOut(stdout)
 	root.SetErr(stderr)
 	root.SetArgs(args)
 
 	root.PersistentFlags().StringVar(&opts.agentURL, "agent", agentDefault(), "The agent to talk to")
+	root.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
+		opts.agentNamed = cmd.Flags().Changed("agent") || os.Getenv(EnvAgent) != ""
+	}
 	root.PersistentFlags().DurationVar(&opts.timeout, "timeout", 30*time.Second, "How long to wait for the agent")
 	root.PersistentFlags().BoolVar(&opts.asJSON, "json", false, "Print the agent's answer as JSON")
 
 	root.AddCommand(
 		reviewCommand(opts),
+		startCommand(opts),
 		stopCommand(opts),
-		setupCommand(),
+		setupCommand(opts),
 		statusCommand(opts),
 		reposCommand(opts),
 		repoCommand(opts),
@@ -62,6 +73,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		graphCommand(opts),
 		architectureCommand(opts),
 		uiCommand(opts),
+		updateCommand(opts),
 		versionCommand(),
 	)
 
@@ -81,7 +93,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 func message(err error) string {
 	var unreachable *agent.Unreachable
 	if errors.As(err, &unreachable) {
-		return fmt.Sprintf("no agent answering at %s. Start it with sourceant ui", unreachable.BaseURL)
+		return fmt.Sprintf("no agent answering at %s. Start it with sourceant start", unreachable.BaseURL)
 	}
 	return err.Error()
 }
@@ -90,11 +102,34 @@ func agentDefault() string {
 	if value := os.Getenv(EnvAgent); value != "" {
 		return value
 	}
+	if saved := install.SavedAgentURL(); saved != "" {
+		return saved
+	}
 	return DefaultAgent
 }
 
+// client talks to the agent, starting one where nothing answers. Anything that
+// needs the agent is something somebody asked for, and asking them to run a
+// second command first is a step the command can take itself.
 func (o *options) client() *agent.Client {
+	client := agent.New(o.agentURL, o.timeout)
+	agent.StartWith(client, func(ctx context.Context) (string, error) {
+		return ensureAgent(ctx, o, o.writer())
+	})
+	return client
+}
+
+// plainClient reports on the agent rather than needing it, so it does not start
+// one: asking whether something runs is not asking for it to run.
+func (o *options) plainClient() *agent.Client {
 	return agent.New(o.agentURL, o.timeout)
+}
+
+func (o *options) writer() io.Writer {
+	if o.out == nil {
+		return io.Discard
+	}
+	return o.out
 }
 
 func statusCommand(opts *options) *cobra.Command {
@@ -103,7 +138,7 @@ func statusCommand(opts *options) *cobra.Command {
 		Short: "Whether the agent and the indexer are running",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			status, err := opts.client().Status(cmd.Context())
+			status, err := opts.plainClient().Status(cmd.Context())
 			if err != nil {
 				return err
 			}
