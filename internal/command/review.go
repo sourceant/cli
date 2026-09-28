@@ -16,8 +16,6 @@ import (
 )
 
 // How often to ask whether a review has finished, and how long to keep asking.
-// A review with a model takes about a minute, and the core gives up on one
-// after thirty.
 var (
 	beat     = 2 * time.Second
 	patience = 10 * time.Minute
@@ -54,8 +52,7 @@ func reviewCommand(opts *options) *cobra.Command {
 			started, err := client.Review(cmd.Context(), agent.Ask{
 				Repository: repository,
 				Against:    against,
-				// Named, so a list of reviews says where each came from. A row
-				// with no title is a review nobody can account for.
+				// Named, so a list of reviews says where each came from.
 				Title:    or(title, "From the terminal"),
 				Skills:   skills,
 				UseModel: !noModel,
@@ -120,8 +117,7 @@ func refusal(found agent.Reading) string {
 	return "the review failed and said nothing about why"
 }
 
-// indexed is the repository a folder belongs to. A review is asked for by the
-// name the machine indexed, and people are standing in a directory.
+// indexed is the repository a folder belongs to.
 func indexed(ctx context.Context, client *agent.Client, folder string) (string, error) {
 	repositories, err := client.Repositories(ctx)
 	if err != nil {
@@ -174,7 +170,7 @@ func settled(ctx context.Context, client *agent.Client, id string) (agent.Readin
 }
 
 // report prints the shape of the answer: where it looked, what it made of the
-// change, and every finding. The link above it has the rest.
+// change, and every finding.
 func report(out io.Writer, found agent.Reading) {
 	review := found.Review
 	if found.Status == agent.Failed {

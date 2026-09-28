@@ -109,9 +109,6 @@ type Read struct {
 }
 
 // Review is whether a checkout's work is ready to be proposed to anyone.
-//
-// Every field the agent answers with is named here. --json re-encodes this, so
-// anything missing is dropped in silence.
 type Review struct {
 	Ready     bool          `json:"ready"`
 	Note      string        `json:"note"`
@@ -146,10 +143,8 @@ const (
 	Failed  = "failed"
 )
 
-// Review asks for a review and answers with where to find it.
-//
-// The answer comes back before the reading is done, so the caller has an id to
-// come back with.
+// Review asks for a review and answers with where to find it, before the
+// reading is done.
 func (c *Client) Review(ctx context.Context, ask Ask) (Reading, error) {
 	if ask.Skills == nil {
 		ask.Skills = []string{}
