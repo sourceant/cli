@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func setupCommand() *cobra.Command {
+func setupCommand(opts *options) *cobra.Command {
 	var (
 		coreVersion  string
 		agentVersion string
@@ -17,6 +17,7 @@ func setupCommand() *cobra.Command {
 		from         string
 		noPull       bool
 		noAgent      bool
+		noStart      bool
 	)
 	command := &cobra.Command{
 		Use:   "setup",
@@ -65,7 +66,19 @@ func setupCommand() *cobra.Command {
 				_, _ = fmt.Fprintf(out, "Agent at   %s\n\n", agentPath)
 			}
 
-			_, _ = fmt.Fprintln(out, "Run sourceant ui to start it and open the view.")
+			if noStart || noAgent {
+				_, _ = fmt.Fprintln(out, "Run sourceant start when you want it running.")
+				return nil
+			}
+			// Installing worked whether or not it starts, so a machine that
+			// cannot start one is told why and left installed.
+			target, err := ensureAgent(cmd.Context(), opts, out)
+			if err != nil {
+				_, _ = fmt.Fprintf(out, "Installed, but not started: %v\n", err)
+				return nil
+			}
+			_, _ = fmt.Fprintf(out, "Running at  %s\n\n", target)
+			_, _ = fmt.Fprintln(out, "Review your work with sourceant review, or open the view with sourceant ui.")
 			return nil
 		},
 	}
@@ -76,6 +89,7 @@ func setupCommand() *cobra.Command {
 	command.Flags().StringVar(&from, "from", "", "What pip installs, for the python runtime. Defaults to the selected core release wheel")
 	command.Flags().BoolVar(&noPull, "no-pull", false, "Use an image already on this machine")
 	command.Flags().BoolVar(&noAgent, "no-agent", false, "Leave the agent alone, install only the core")
+	command.Flags().BoolVar(&noStart, "no-start", false, "Install without starting anything")
 	command.MarkFlagsMutuallyExclusive("core-version", "image")
 	command.MarkFlagsMutuallyExclusive("core-version", "from")
 	return command

@@ -73,7 +73,7 @@ curl -fsSL https://raw.githubusercontent.com/sourceant/cli/main/scripts/install.
 
 Both put the index in the same place, `$XDG_DATA_HOME/sourceant`, so it does not matter which one indexed it. The container runs as whoever installed, so what it writes there belongs to them.
 
-`sourceant ui` starts the agent and opens the view. `sourceant stop` shuts down the agent and its core without removing the index or configuration. Stopping requires an agent with stop support.
+Any command that needs the agent starts one, so nothing has to be started by hand. The usual port is 8930, and where something else holds it the agent takes the next one free and the address is written to `~/.sourceant/config.json` for every later command. `sourceant start` does it on its own, `sourceant stop` shuts the agent and its core down without touching the index or the configuration, and `sourceant status` reports on both without starting anything.
 
 | Variable | Default | Meaning |
 |---|---|---|
@@ -93,9 +93,13 @@ Both put the index in the same place, `$XDG_DATA_HOME/sourceant`, so it does not
 | `sourceant graph <repository>` | What the indexer found in one of them |
 | `sourceant architecture <repository>` | Indexed components and dependencies; compare an exported baseline with `--baseline` |
 | `sourceant ui` | Open the graph in a browser |
+| `sourceant start` | Start the agent and the indexer |
+| `sourceant update [cli\|agent\|core]...` | Bring this machine up to the current release |
 | `sourceant version` | What this build is |
 
 `review` reads the folder you are standing in, committed or not, against the branch the repository defaults to. It exits 2 when a skill blocks the change, so a shell script can use it. `--against <ref>` compares against something else, `--no-model` says what changed without judging it, `--no-wait` prints the link and leaves it running, and `--title` and `--skill` name the change and the skills to read it against.
+
+`update` replaces this command, the agent and the core, or only the parts named. `--check` says what is available and changes nothing. `--to <version>` takes a version other than the newest, for one named part. A machine on a prerelease follows prereleases; `--prerelease` asks for that on a machine that is not. Nothing is written until its checksum matches the release it came from, and each replacement is renamed over the old file, so an interrupted update leaves what was working in place.
 
 `--json` prints the agent's own answer, for anything that wants to read it rather than look at it.
 

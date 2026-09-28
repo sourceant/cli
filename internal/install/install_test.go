@@ -226,3 +226,37 @@ func TestThePythonRuntimePreparesTheDatabase(t *testing.T) {
 		t.Errorf("a core was installed without a schema:\n%s", run.commands())
 	}
 }
+
+func TestSavingWhereTheAgentAnswersKeepsTheRest(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("SOURCEANT_INSTALL_HOME", home)
+	path := ConfigPath()
+	if err := Save(path, Config{Core: Core{Runtime: Docker, Image: "ghcr.io/sourceant/sourceant:latest"}}); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := SaveAgentURL("http://127.0.0.1:8931"); err != nil {
+		t.Fatal(err)
+	}
+
+	config, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.Agent.URL != "http://127.0.0.1:8931" {
+		t.Errorf("agent url is %q", config.Agent.URL)
+	}
+	if config.Core.Image != "ghcr.io/sourceant/sourceant:latest" || config.Core.Runtime != Docker {
+		t.Errorf("the core was rewritten: %+v", config.Core)
+	}
+	if SavedAgentURL() != "http://127.0.0.1:8931" {
+		t.Errorf("read back %q", SavedAgentURL())
+	}
+}
+
+func TestNoConfigIsNoAgentAddress(t *testing.T) {
+	t.Setenv("SOURCEANT_INSTALL_HOME", t.TempDir())
+	if SavedAgentURL() != "" {
+		t.Errorf("got %q from a machine with no configuration", SavedAgentURL())
+	}
+}
