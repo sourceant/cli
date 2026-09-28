@@ -114,13 +114,11 @@ func New(baseURL string, timeout time.Duration) *Client {
 // Starter brings the agent up and answers with the address it listens on.
 type Starter func(ctx context.Context) (string, error)
 
-// StartWith gives this client something to run when nothing answers. Without
-// it, a call to an agent that is not running fails as it always did.
+// StartWith gives this client something to run when nothing answers.
 func StartWith(client *Client, start Starter) { client.revive.start = start }
 
 // reviving starts the agent once, for the first call that finds it absent, and
-// sends that call again. The agent may come up somewhere else, so the retry
-// follows the address it answers on.
+// sends that call again.
 type reviving struct {
 	client *Client
 	start  Starter
