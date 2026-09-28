@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-beta.5] - 2026-09-28
+
+### Added
+
+- `sourceant update` replaces this command, the agent and the core, or the parts
+  named. Each download is checked against the release's own checksums, and the
+  replacement is renamed over the old file, so an interrupted update leaves a
+  working install
+- `sourceant start` starts the agent and the indexer without opening a browser
+
+### Changed
+
+- A command that needs the agent starts one, on the next free port when
+  something else holds the usual one, and writes that address down so later
+  commands and the view agree on it
+- `sourceant setup` starts what it installed
+
 ## [1.0.0-beta.4] - 2026-09-27
 
 ### Added

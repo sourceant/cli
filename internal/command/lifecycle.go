@@ -24,8 +24,8 @@ func ensureAgent(ctx context.Context, opts *options, out io.Writer) (string, err
 	if _, err := agent.New(opts.agentURL, opts.timeout).Status(ctx); err == nil {
 		return opts.agentURL, nil
 	}
-	// An address somebody named is the address they meant, so it is started
-	// there or not at all. Only the default moves when something holds it.
+	// An address somebody named is the address they meant, so it is started there
+	// or not at all.
 	listen, err := address(opts.agentURL, !opts.agentNamed)
 	if err != nil {
 		return "", err
@@ -46,8 +46,7 @@ func ensureAgent(ctx context.Context, opts *options, out io.Writer) (string, err
 	return target, nil
 }
 
-// address is what to listen on. With move, a port something else holds is
-// passed over for the next one up.
+// address is what to listen on, passing over a port something else holds.
 func address(from string, move bool) (string, error) {
 	parsed, err := url.Parse(from)
 	if err != nil {
@@ -105,7 +104,7 @@ func run(listen string, out io.Writer) error {
 }
 
 // answering waits for the agent to serve, which means waiting for the core it
-// starts first. A first run pulls or builds one.
+// starts first.
 func answering(ctx context.Context, target string, timeout time.Duration) error {
 	client := agent.New(target, timeout)
 	deadline := time.Now().Add(90 * time.Second)

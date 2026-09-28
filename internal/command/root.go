@@ -108,9 +108,7 @@ func agentDefault() string {
 	return DefaultAgent
 }
 
-// client talks to the agent, starting one where nothing answers. Anything that
-// needs the agent is something somebody asked for, and asking them to run a
-// second command first is a step the command can take itself.
+// client talks to the agent, starting one where nothing answers.
 func (o *options) client() *agent.Client {
 	client := agent.New(o.agentURL, o.timeout)
 	agent.StartWith(client, func(ctx context.Context) (string, error) {

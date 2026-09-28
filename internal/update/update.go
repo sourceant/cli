@@ -47,8 +47,7 @@ type Asset struct {
 // Fetcher reads a URL.
 type Fetcher func(ctx context.Context, url string) ([]byte, error)
 
-// Latest is the newest release of a repository. Prereleases are included when
-// asked for, which is what a machine already running one wants.
+// Latest is the newest release of a repository.
 func Latest(ctx context.Context, get Fetcher, repo string, prerelease bool) (Release, error) {
 	base := api(repo)
 	if !prerelease {
