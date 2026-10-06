@@ -84,7 +84,7 @@ func TestCommittedReviewFlagsReachTheAPI(t *testing.T) {
 		"/api/reviews":      {{status: http.StatusAccepted, body: fixture(t, "review-started.json")}},
 		"/api/reviews/":     {{body: fixture(t, "review-done.json")}},
 	})
-	stdout, stderr, code := run("review", "--repo", folder, "--base", strings.Repeat("a", 40), "--head", strings.Repeat("b", 40), "--format", "json")
+	stdout, stderr, code := run("review", "--dir", folder, "--base", strings.Repeat("a", 40), "--head", strings.Repeat("b", 40), "--format", "json")
 	if code != 0 {
 		t.Fatalf("exited %d: %s", code, stderr)
 	}

@@ -28,7 +28,7 @@ func reviewCommand(opts *options) *cobra.Command {
 		skills          []string
 		noWait          bool
 		noModel         bool
-		repoPath        string
+		folderPath      string
 		base            string
 		head            string
 		descriptionFile string
@@ -52,11 +52,11 @@ func reviewCommand(opts *options) *cobra.Command {
 			if len(args) == 1 {
 				folder = args[0]
 			}
-			if repoPath != "" {
+			if folderPath != "" {
 				if len(args) != 0 {
-					return fmt.Errorf("use either --repo or a positional path")
+					return fmt.Errorf("use either --dir or a positional path")
 				}
-				folder = repoPath
+				folder = folderPath
 			}
 			if remote.endpoint != "" {
 				if against != "" || noWait || noModel || len(skills) != 0 || descriptionFile != "" {
@@ -66,7 +66,7 @@ func reviewCommand(opts *options) *cobra.Command {
 				return remoteReview(cmd, opts, folder, remote)
 			}
 			if remote.repository != "" || remote.diffFile != "" || remote.metadataFile != "" || len(remote.configuration) != 0 {
-				return fmt.Errorf("snapshot options require --reviewer or SOURCEANT_REVIEW_URL")
+				return fmt.Errorf("snapshot options require --host or SOURCEANT_REVIEW_HOST")
 			}
 			if base != "" {
 				if against != "" {
@@ -146,15 +146,15 @@ func reviewCommand(opts *options) *cobra.Command {
 	command.Flags().StringArrayVar(&skills, "skill", nil, "Read it against this skill, repeatable")
 	command.Flags().BoolVar(&noWait, "no-wait", false, "Print the link and leave it running")
 	command.Flags().BoolVar(&noModel, "no-model", false, "Say what changed without judging it")
-	command.Flags().StringVar(&repoPath, "repo", "", "The checkout to review")
+	command.Flags().StringVarP(&folderPath, "dir", "d", "", "The local checkout directory to review")
 	command.Flags().StringVar(&base, "base", "", "Compare against this commit")
 	command.Flags().StringVar(&head, "head", "", "Require a clean checkout at this full commit SHA")
 	command.Flags().StringVar(&descriptionFile, "description-file", "", "Read the change description from this file")
-	command.Flags().StringVar(&remote.endpoint, "reviewer", os.Getenv("SOURCEANT_REVIEW_URL"), "The remote snapshot review API URL")
-	command.Flags().StringVar(&remote.repository, "repository", "", "Repository identity as owner/name")
+	command.Flags().StringVarP(&remote.endpoint, "host", "H", os.Getenv("SOURCEANT_REVIEW_HOST"), "The reviewer server URL, including scheme and optional port")
+	command.Flags().StringVarP(&remote.repository, "repository", "r", "", "Repository identity as owner/name")
 	command.Flags().StringVar(&remote.diffFile, "diff-file", "", "Use a patch matching the committed comparison")
 	command.Flags().StringVar(&remote.metadataFile, "pr-metadata", "", "Read title and body from pull request JSON")
-	command.Flags().StringArrayVar(&remote.configuration, "review-option", nil, "Remote review option as label=value, repeatable")
+	command.Flags().StringArrayVarP(&remote.configuration, "option", "o", nil, "Remote review option as label=value, repeatable")
 	command.Flags().StringVar(&format, "format", "", "Output format: json or text")
 	return command
 }

@@ -103,6 +103,26 @@ Any command that needs the agent starts one, so nothing has to be started by han
 
 `--json` prints the agent's own answer, for anything that wants to read it rather than look at it.
 
+For a remote review, `--dir` (`-d`) selects the local checkout and
+`--repository` (`-r`) supplies its `owner/name` identity. `--host` (`-H`)
+selects the reviewer server; the CLI supplies the API path. Set
+`SOURCEANT_REVIEW_TOKEN` for authentication and optionally
+`SOURCEANT_REVIEW_HOST` as the default server.
+
+```bash
+sourceant review \
+  --dir /workspace/repo \
+  --repository acme/example \
+  --base "$(git -C /workspace/repo rev-parse HEAD~1)" \
+  --head "$(git -C /workspace/repo rev-parse HEAD)" \
+  --host https://review.example.com \
+  --option discovery-passes=3 \
+  --option evaluation-passes=2 \
+  --format json
+```
+
+`--option` (`-o`) can be repeated for different reviewer settings.
+
 ## Building
 
 ```bash

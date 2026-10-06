@@ -58,8 +58,8 @@ type snapshotResult struct {
 
 func remoteReview(cmd *cobra.Command, opts *options, folder string, settings snapshotOptions) error {
 	endpoint, err := url.Parse(settings.endpoint)
-	if err != nil || endpoint.Host == "" || endpoint.User != nil || endpoint.RawQuery != "" || endpoint.Fragment != "" {
-		return fmt.Errorf("reviewer must be an API URL without credentials, query or fragment")
+	if err != nil || endpoint.Host == "" || endpoint.User != nil || endpoint.RawQuery != "" || endpoint.Fragment != "" || (endpoint.Path != "" && endpoint.Path != "/") {
+		return fmt.Errorf("--host must be a server URL without credentials, an API path, query or fragment")
 	}
 	loopback := endpoint.Hostname() == "localhost"
 	if ip := net.ParseIP(endpoint.Hostname()); ip != nil {
@@ -68,6 +68,8 @@ func remoteReview(cmd *cobra.Command, opts *options, folder string, settings sna
 	if endpoint.Scheme != "https" && !(endpoint.Scheme == "http" && loopback) {
 		return fmt.Errorf("the reviewer API requires HTTPS")
 	}
+	endpoint.Path = "/api/reviews/snapshots"
+
 	token := os.Getenv("SOURCEANT_REVIEW_TOKEN")
 	if token == "" {
 		return fmt.Errorf("SOURCEANT_REVIEW_TOKEN is required for a remote review")

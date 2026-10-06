@@ -80,7 +80,13 @@ func TestRemoteReviewUploadsCommittedContextAndUsesWorkspaceCredentials(t *testi
 	}))
 	defer server.Close()
 	var stdout, stderr bytes.Buffer
-	code := Run([]string{"review", "--repo", folder, "--base", base, "--head", head, "--repository", "acme/example", "--reviewer", server.URL + "/api/reviews/snapshots", "--format", "json", "--review-option", "discovery-passes=3"}, &stdout, &stderr)
+	code := Run([]string{"review", "--dir", folder, "--base", base, "--head", head, "--repository", "acme/example", "--host", server.URL, "--format", "json", "--option", "discovery-passes=3"}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("exited %d: %s", code, stderr.String())
+	}
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"review", "-d", folder, "--base", base, "--head", head, "-r", "acme/example", "-H", server.URL + "/", "--format", "json", "-o", "discovery-passes=3"}, &stdout, &stderr)
 	if code != 2 {
 		t.Fatalf("exited %d: %s", code, stderr.String())
 	}
@@ -116,7 +122,7 @@ func TestRemoteReviewRefusesWrongHeadBeforeUploading(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { called = true }))
 	defer server.Close()
 	var stdout, stderr bytes.Buffer
-	code := Run([]string{"review", "--repo", folder, "--base", base, "--head", strings.Repeat("a", 40), "--repository", "acme/example", "--reviewer", server.URL}, &stdout, &stderr)
+	code := Run([]string{"review", "--dir", folder, "--base", base, "--head", strings.Repeat("a", 40), "--repository", "acme/example", "--host", server.URL}, &stdout, &stderr)
 	if code != 1 || called || stdout.Len() != 0 {
 		t.Fatalf("invalid input was uploaded: code=%d called=%v", code, called)
 	}
@@ -133,8 +139,16 @@ func TestRemoteReviewDoesNotFollowRedirects(t *testing.T) {
 	}))
 	defer server.Close()
 	var stdout, stderr bytes.Buffer
-	code := Run([]string{"review", "--repo", folder, "--base", base, "--head", head, "--repository", "acme/example", "--reviewer", server.URL}, &stdout, &stderr)
+	code := Run([]string{"review", "--dir", folder, "--base", base, "--head", head, "--repository", "acme/example", "--host", server.URL}, &stdout, &stderr)
 	if code != 1 || forwarded || stdout.Len() != 0 {
 		t.Fatalf("the request followed a redirect: code=%d forwarded=%v", code, forwarded)
+	}
+}
+
+func TestRemoteReviewHostRejectsAnEndpointPath(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"review", "--host", "https://review.example.com/api/reviews/snapshots"}, &stdout, &stderr)
+	if code == 0 || !strings.Contains(stderr.String(), "--host must be a server URL") {
+		t.Fatalf("exited %d: %s", code, stderr.String())
 	}
 }
