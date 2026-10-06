@@ -131,6 +131,12 @@ func remoteReview(cmd *cobra.Command, opts *options, folder string, settings sna
 		}
 	} else {
 		report(cmd.OutOrStdout(), agent.Reading{Status: result.Status, Review: result.Review})
+		if len(result.Snapshot.Omitted) != 0 {
+			_, _ = fmt.Fprintln(cmd.OutOrStdout(), "\nFiles omitted from the review snapshot:")
+			for _, file := range result.Snapshot.Omitted {
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), "  "+file)
+			}
+		}
 	}
 	if !result.Review.Ready {
 		return &unready{}
@@ -178,7 +184,7 @@ func checkoutSnapshot(ctx context.Context, folder string, settings snapshotOptio
 	if len(status) != 0 {
 		return snapshot, fmt.Errorf("commit tracked changes before submitting a remote snapshot")
 	}
-	diff, err := checkoutGit(ctx, folder, "diff", "--no-ext-diff", "--no-textconv", settings.base+"..."+settings.head)
+	diff, err := checkoutGit(ctx, folder, "diff", "--no-color", "--no-ext-diff", "--no-textconv", settings.base+"..."+settings.head)
 	if err != nil {
 		return snapshot, err
 	}

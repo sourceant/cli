@@ -33,6 +33,9 @@ func snapshotCheckout(t *testing.T) (string, string, string) {
 	if err := os.WriteFile(filepath.Join(folder, "context.go"), []byte("package example\nvar Context = Value\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(folder, "binary.bin"), []byte{0xff, 0x00}, 0600); err != nil {
+		t.Fatal(err)
+	}
 	git("add", "-A")
 	git("commit", "-q", "-m", "feat: Add the example")
 	base := git("rev-parse", "HEAD")
@@ -50,6 +53,17 @@ func snapshotCheckout(t *testing.T) (string, string, string) {
 
 func TestRemoteReviewUploadsCommittedContextAndUsesWorkspaceCredentials(t *testing.T) {
 	folder, base, head := snapshotCheckout(t)
+	if encoded, err := exec.Command("git", "-C", folder, "config", "color.ui", "always").CombinedOutput(); err != nil {
+		t.Fatalf("git config failed: %s", encoded)
+	}
+	patch, err := exec.Command("git", "-C", folder, "diff", "--no-color", base+"..."+head).Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	patchFile := filepath.Join(t.TempDir(), "diff.patch")
+	if err := os.WriteFile(patchFile, patch, 0600); err != nil {
+		t.Fatal(err)
+	}
 	t.Setenv("SOURCEANT_REVIEW_TOKEN", "your-api-key-here")
 	t.Setenv("SOURCEANT_REVIEW_WORKSPACE", "benchmark")
 	var captured reviewSnapshot
@@ -75,12 +89,12 @@ func TestRemoteReviewUploadsCommittedContextAndUsesWorkspaceCredentials(t *testi
 			t.Fatal(err)
 		}
 		response.Data.Review.Base = base
-		response.Data.Snapshot = snapshotIdentity{Repository: "acme/example", Base: base, Head: head}
+		response.Data.Snapshot = snapshotIdentity{Repository: "acme/example", Base: base, Head: head, Omitted: captured.Omitted}
 		_ = json.NewEncoder(w).Encode(response)
 	}))
 	defer server.Close()
 	var stdout, stderr bytes.Buffer
-	code := Run([]string{"review", "--dir", folder, "--base", base, "--head", head, "--repository", "acme/example", "--host", server.URL, "--format", "json", "--option", "discovery-passes=3"}, &stdout, &stderr)
+	code := Run([]string{"review", "--dir", folder, "--base", base, "--head", head, "--repository", "acme/example", "--host", server.URL, "--format", "json", "--option", "discovery-passes=3", "--diff-file", patchFile}, &stdout, &stderr)
 	if code != 2 {
 		t.Fatalf("exited %d: %s", code, stderr.String())
 	}
@@ -112,6 +126,12 @@ func TestRemoteReviewUploadsCommittedContextAndUsesWorkspaceCredentials(t *testi
 	}
 	if !json.Valid(stdout.Bytes()) {
 		t.Fatalf("invalid JSON: %s", stdout.String())
+	}
+	stdout.Reset()
+	stderr.Reset()
+	code = Run([]string{"review", "--dir", folder, "--base", base, "--head", head, "--repository", "acme/example", "--host", server.URL}, &stdout, &stderr)
+	if code != 2 || !strings.Contains(stdout.String(), "Files omitted from the review snapshot:") || !strings.Contains(stdout.String(), "binary.bin") {
+		t.Fatalf("omitted file is hidden: exited %d, stdout=%s, stderr=%s", code, stdout.String(), stderr.String())
 	}
 }
 
