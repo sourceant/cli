@@ -77,6 +77,29 @@ func TestReviewPrintsTheLinkAndWhatWasMadeOfTheChange(t *testing.T) {
 	}
 }
 
+func TestCommittedReviewFlagsReachTheAPI(t *testing.T) {
+	folder := t.TempDir()
+	run, _, sent := reviewing(t, map[string][]answer{
+		"/api/repositories": {{body: indexing(t, folder)}},
+		"/api/reviews":      {{status: http.StatusAccepted, body: fixture(t, "review-started.json")}},
+		"/api/reviews/":     {{body: fixture(t, "review-done.json")}},
+	})
+	stdout, stderr, code := run("review", "--repo", folder, "--base", strings.Repeat("a", 40), "--head", strings.Repeat("b", 40), "--format", "json")
+	if code != 0 {
+		t.Fatalf("exited %d: %s", code, stderr)
+	}
+	var request map[string]any
+	if err := json.Unmarshal(*sent, &request); err != nil {
+		t.Fatal(err)
+	}
+	if request["against"] != strings.Repeat("a", 40) || request["head"] != strings.Repeat("b", 40) {
+		t.Fatalf("commit comparison was lost: %s", *sent)
+	}
+	if !json.Valid([]byte(stdout)) {
+		t.Fatalf("invalid JSON output: %s", stdout)
+	}
+}
+
 func TestABlockingFindingIsPrintedAndExitsNonZero(t *testing.T) {
 	folder := t.TempDir()
 	run, _, _ := reviewing(t, map[string][]answer{

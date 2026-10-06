@@ -1,0 +1,161 @@
+{
+  "status": "success",
+  "message": "Request was successful",
+  "data": {
+    "status": "done",
+    "configuration": {
+      "discovery-passes": "3",
+      "evaluation-passes": "2",
+      "concurrency": "6",
+      "minimum-support": "1",
+      "maximum-rejections": "0",
+      "reading-budget": "15000",
+      "include-nitpicks": "False"
+    },
+    "review": {
+      "base": "3712b5d70f9c924d9a088268027aa15d8bff769d",
+      "ready": false,
+      "review": {
+        "execution": {
+          "reviews": [
+            {
+              "participant": "review-0",
+              "repetition": 1,
+              "error": ""
+            },
+            {
+              "participant": "review-0",
+              "repetition": 2,
+              "error": ""
+            },
+            {
+              "participant": "review-0",
+              "repetition": 3,
+              "error": ""
+            }
+          ],
+          "evaluations": [
+            {
+              "participant": "deterministic",
+              "repetition": 1,
+              "error": "",
+              "judgments": []
+            },
+            {
+              "participant": "evaluation-0",
+              "repetition": 1,
+              "error": "",
+              "judgments": [
+                {
+                  "candidate": 0,
+                  "status": "supported",
+                  "reason": "The migration changes an existing applied operation.",
+                  "evidence": [
+                    "db/0001_charges.py: return 1"
+                  ]
+                }
+              ]
+            },
+            {
+              "participant": "evaluation-0",
+              "repetition": 2,
+              "error": "",
+              "judgments": [
+                {
+                  "candidate": 0,
+                  "status": "supported",
+                  "reason": "The migration changes an existing applied operation.",
+                  "evidence": [
+                    "db/0001_charges.py: return 1"
+                  ]
+                }
+              ]
+            }
+          ],
+          "analysis_coverage": [
+            {
+              "tool": "semgrep",
+              "paths": [],
+              "unsupported": [],
+              "unavailable": [
+                "db/0001_charges.py"
+              ],
+              "languages": [],
+              "checks": [
+                "static-analysis"
+              ],
+              "skipped": []
+            }
+          ],
+          "analysis_findings": [],
+          "file_languages": {
+            "db/0001_charges.py": "python"
+          },
+          "unchecked": [
+            "db/0001_charges.py"
+          ],
+          "producers": [
+            [
+              "review-0:1",
+              "review-0:2",
+              "review-0:3"
+            ]
+          ],
+          "candidates": [
+            {
+              "file_name": "db/0001_charges.py",
+              "position": 3,
+              "start_line": 2,
+              "end_line": 2,
+              "side": "RIGHT",
+              "comment": "Add a new migration instead.",
+              "category": "BUG",
+              "trigger": null,
+              "blast": null,
+              "impact": null,
+              "certainty": null,
+              "comment_only": false,
+              "suggested_code": "    pass\n",
+              "existing_code": "    return 1\n",
+              "claims": []
+            }
+          ]
+        },
+        "verdict": "REQUEST_CHANGES",
+        "summary": {
+          "overview": "Review found 1 actionable issue(s).",
+          "key_improvements": [],
+          "minor_suggestions": [
+            "Review coverage is incomplete. Inspect the execution details before approving."
+          ],
+          "critical_issues": [
+            "Add a new migration instead."
+          ]
+        },
+        "suggestions": [
+          {
+            "path": "db/0001_charges.py",
+            "start_line": 2,
+            "end_line": 2,
+            "side": "RIGHT",
+            "comment": "Add a new migration instead.",
+            "category": "BUG",
+            "existing_code": "    return 1\n",
+            "suggested_code": "    pass\n"
+          }
+        ],
+        "notes": {}
+      },
+      "where": {
+        "base": "3712b5d70f9c924d9a088268027aa15d8bff769d",
+        "branch": "11db3957bcf923e86fe4d98857e86a1182ecf03d"
+      }
+    },
+    "snapshot": {
+      "repository": "acme/billing",
+      "base": "3712b5d70f9c924d9a088268027aa15d8bff769d",
+      "head": "11db3957bcf923e86fe4d98857e86a1182ecf03d",
+      "omitted": []
+    }
+  }
+}
