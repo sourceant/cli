@@ -23,11 +23,17 @@ var (
 
 func reviewCommand(opts *options) *cobra.Command {
 	var (
-		against string
-		title   string
-		skills  []string
-		noWait  bool
-		noModel bool
+		against         string
+		title           string
+		skills          []string
+		noWait          bool
+		noModel         bool
+		folderPath      string
+		base            string
+		head            string
+		descriptionFile string
+		remote          snapshotOptions
+		format          string
 	)
 	command := &cobra.Command{
 		Use:   "review [path]",
@@ -36,9 +42,48 @@ func reviewCommand(opts *options) *cobra.Command {
 			"it is committed or not, and say whether it is ready to propose.",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if format != "" && format != "json" && format != "text" {
+				return fmt.Errorf("format must be json or text")
+			}
+			if format != "" {
+				opts.asJSON = format == "json"
+			}
 			folder := "."
 			if len(args) == 1 {
 				folder = args[0]
+			}
+			if folderPath != "" {
+				if len(args) != 0 {
+					return fmt.Errorf("use either --dir or a positional path")
+				}
+				folder = folderPath
+			}
+			if remote.endpoint != "" {
+				if against != "" || noWait || noModel || len(skills) != 0 || descriptionFile != "" {
+					return fmt.Errorf("remote snapshots require committed input and --pr-metadata for context")
+				}
+				remote.base, remote.head, remote.title = base, head, title
+				return remoteReview(cmd, opts, folder, remote)
+			}
+			if remote.repository != "" || remote.diffFile != "" || remote.metadataFile != "" || len(remote.configuration) != 0 {
+				return fmt.Errorf("snapshot options require --host or SOURCEANT_REVIEW_HOST")
+			}
+			if base != "" {
+				if against != "" {
+					return fmt.Errorf("use either --base or --against")
+				}
+				against = base
+			}
+			if head != "" && base == "" {
+				return fmt.Errorf("--head requires --base")
+			}
+			description := ""
+			if descriptionFile != "" {
+				content, err := os.ReadFile(descriptionFile)
+				if err != nil {
+					return fmt.Errorf("the description file could not be read")
+				}
+				description = string(content)
 			}
 			folder, err := filepath.Abs(folder)
 			if err != nil {
@@ -50,8 +95,10 @@ func reviewCommand(opts *options) *cobra.Command {
 				return err
 			}
 			started, err := client.Review(cmd.Context(), agent.Ask{
-				Repository: repository,
-				Against:    against,
+				Repository:  repository,
+				Against:     against,
+				Head:        head,
+				Description: description,
 				// Named, so a list of reviews says where each came from.
 				Title:    or(title, "From the terminal"),
 				Skills:   skills,
@@ -99,6 +146,16 @@ func reviewCommand(opts *options) *cobra.Command {
 	command.Flags().StringArrayVar(&skills, "skill", nil, "Read it against this skill, repeatable")
 	command.Flags().BoolVar(&noWait, "no-wait", false, "Print the link and leave it running")
 	command.Flags().BoolVar(&noModel, "no-model", false, "Say what changed without judging it")
+	command.Flags().StringVarP(&folderPath, "dir", "d", "", "The local checkout directory to review")
+	command.Flags().StringVar(&base, "base", "", "Compare against this commit")
+	command.Flags().StringVar(&head, "head", "", "Require a clean checkout at this full commit SHA")
+	command.Flags().StringVar(&descriptionFile, "description-file", "", "Read the change description from this file")
+	command.Flags().StringVarP(&remote.endpoint, "host", "H", os.Getenv("SOURCEANT_REVIEW_HOST"), "The reviewer server URL, including scheme and optional port")
+	command.Flags().StringVarP(&remote.repository, "repository", "r", "", "Repository identity as owner/name")
+	command.Flags().StringVar(&remote.diffFile, "diff-file", "", "Use a patch matching the committed comparison")
+	command.Flags().StringVar(&remote.metadataFile, "pr-metadata", "", "Read title and body from pull request JSON")
+	command.Flags().StringArrayVarP(&remote.configuration, "option", "o", nil, "Remote review option as label=value, repeatable")
+	command.Flags().StringVar(&format, "format", "", "Output format: json or text")
 	return command
 }
 

@@ -14,6 +14,7 @@ import (
 type Ask struct {
 	Repository  string   `json:"repository"`
 	Against     string   `json:"against"`
+	Head        string   `json:"head,omitempty"`
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
 	Skills      []string `json:"skills"`
@@ -106,6 +107,7 @@ type Read struct {
 	Summary     Summary           `json:"summary"`
 	Suggestions []Suggestion      `json:"suggestions"`
 	Notes       map[string]string `json:"notes"`
+	Execution   json.RawMessage   `json:"execution,omitempty"`
 }
 
 // Review is whether a checkout's work is ready to be proposed to anyone.
