@@ -157,6 +157,36 @@ func TestReviewKeepsAskingUntilItIsFinished(t *testing.T) {
 	}
 }
 
+func TestReviewWaitTimeoutOverridesTheDefault(t *testing.T) {
+	oldBeat, oldPatience := beat, patience
+	beat, patience = time.Millisecond, time.Nanosecond
+	t.Cleanup(func() { beat, patience = oldBeat, oldPatience })
+	folder := t.TempDir()
+	run, _, _ := reviewing(t, map[string][]answer{
+		"/api/repositories": {{body: indexing(t, folder)}},
+		"/api/reviews":      {{status: http.StatusAccepted, body: fixture(t, "review-started.json")}},
+		"/api/reviews/": {
+			{body: fixture(t, "review-started.json")},
+			{body: fixture(t, "review-done.json")},
+		},
+	})
+	_, stderr, code := run("review", "--wait-timeout", "1s", folder)
+	if code != 0 {
+		t.Fatalf("exited %d: %s", code, stderr)
+	}
+}
+
+func TestReviewRejectsInvalidWaitTimeout(t *testing.T) {
+	run, asked, _ := reviewing(t, map[string][]answer{})
+	_, stderr, code := run("review", "--wait-timeout", "0s")
+	if code == 0 || !strings.Contains(stderr, "wait-timeout must be greater than zero") {
+		t.Fatalf("exited %d: %s", code, stderr)
+	}
+	if len(*asked) != 0 {
+		t.Fatal("sent a request before validating the timeout")
+	}
+}
+
 func TestNoWaitPrintsTheLinkAndLeavesItRunning(t *testing.T) {
 	folder := t.TempDir()
 	run, asked, _ := reviewing(t, map[string][]answer{

@@ -34,6 +34,7 @@ func reviewCommand(opts *options) *cobra.Command {
 		descriptionFile string
 		remote          snapshotOptions
 		format          string
+		waitTimeout     time.Duration
 	)
 	command := &cobra.Command{
 		Use:   "review [path]",
@@ -42,6 +43,9 @@ func reviewCommand(opts *options) *cobra.Command {
 			"it is committed or not, and say whether it is ready to propose.",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if waitTimeout <= 0 {
+				return fmt.Errorf("wait-timeout must be greater than zero")
+			}
 			if format != "" && format != "json" && format != "text" {
 				return fmt.Errorf("format must be json or text")
 			}
@@ -121,7 +125,7 @@ func reviewCommand(opts *options) *cobra.Command {
 			if !opts.asJSON {
 				_, _ = fmt.Fprintln(cmd.OutOrStdout(), link)
 			}
-			found, err := settled(cmd.Context(), client, started.ID)
+			found, err := settled(cmd.Context(), client, started.ID, waitTimeout)
 			if err != nil {
 				return err
 			}
@@ -145,6 +149,7 @@ func reviewCommand(opts *options) *cobra.Command {
 	command.Flags().StringVar(&title, "title", "", "What this change is called")
 	command.Flags().StringArrayVar(&skills, "skill", nil, "Read it against this skill, repeatable")
 	command.Flags().BoolVar(&noWait, "no-wait", false, "Print the link and leave it running")
+	command.Flags().DurationVar(&waitTimeout, "wait-timeout", patience, "How long to wait for the completed review")
 	command.Flags().BoolVar(&noModel, "no-model", false, "Say what changed without judging it")
 	command.Flags().StringVarP(&folderPath, "dir", "d", "", "The local checkout directory to review")
 	command.Flags().StringVar(&base, "base", "", "Compare against this commit")
@@ -205,8 +210,8 @@ func resolved(path string) string {
 	return filepath.Clean(path)
 }
 
-func settled(ctx context.Context, client *agent.Client, id string) (agent.Reading, error) {
-	giveUp := time.Now().Add(patience)
+func settled(ctx context.Context, client *agent.Client, id string, waitTimeout time.Duration) (agent.Reading, error) {
+	giveUp := time.Now().Add(waitTimeout)
 	for {
 		found, err := client.Reviewed(ctx, id)
 		if err != nil {
@@ -216,12 +221,12 @@ func settled(ctx context.Context, client *agent.Client, id string) (agent.Readin
 			return found, nil
 		}
 		if time.Now().After(giveUp) {
-			return found, fmt.Errorf("this review is still running after %s. It carries on without us; the link has it", patience)
+			return found, fmt.Errorf("this review is still running after %s. It carries on without us; the link has it", waitTimeout)
 		}
 		select {
 		case <-ctx.Done():
 			return found, ctx.Err()
-		case <-time.After(beat):
+		case <-time.After(min(beat, time.Until(giveUp))):
 		}
 	}
 }
